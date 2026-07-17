@@ -1,0 +1,22 @@
+# ── Segredos: NUNCA versionar ────────────────────────────────
+# O .env guarda caminhos de credencial e parâmetros do ambiente
+backend/.env
+.env
+# Chaves de service account / tokens do Google
+*service-account*.json
+*credentials*.json
+*.key.json
+
+# ── Dados operacionais (exports das views) ──────────────────
+# Contêm ordens, veículos e usuários — ficam só na sua máquina
+backend/dados/*.csv
+
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ── Diversos ─────────────────────────────────────────────────
+.DS_Store
+*.log

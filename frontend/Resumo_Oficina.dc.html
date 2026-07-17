@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <!-- Fallback de tokens: carregado ANTES do _ds; se a pasta oficial existir, ela sobrescreve -->
+  <link rel="stylesheet" href="_ds-fallback/tokens.css">
+  <link rel="stylesheet" href="_ds/maas-design-system-187213db-289f-4ada-afde-47607103acd5/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/maas-design-system-187213db-289f-4ada-afde-47607103acd5/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/maas-design-system-187213db-289f-4ada-afde-47607103acd5/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/maas-design-system-187213db-289f-4ada-afde-47607103acd5/tokens/radii-shadows.css">
+  <link rel="stylesheet" href="_ds/maas-design-system-187213db-289f-4ada-afde-47607103acd5/tokens/base.css">
+  <link rel="stylesheet" href="_ds/maas-design-system-187213db-289f-4ada-afde-47607103acd5/styles.css">
+  <script src="_ds/maas-design-system-187213db-289f-4ada-afde-47607103acd5/_ds_bundle.js"></script>
+  <style>
+    html,body{margin:0;height:100%;background:var(--maas-petroleo);overflow:hidden;font-family:var(--font-sans);}
+    a{color:var(--maas-verde-escuro);text-decoration:none;}
+    @keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.35}}
+    @media (prefers-reduced-motion: reduce){*{animation:none!important}}
+  </style>
+</helmet>
+<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--maas-petroleo);overflow:hidden;">
+  <div style="width:1920px;height:1080px;transform:scale({{ scale }});transform-origin:center center;background:var(--surface-page);display:flex;flex-direction:column;padding:36px 44px;box-sizing:border-box;gap:18px;">
+
+    <!-- Header -->
+    <header style="display:flex;align-items:center;gap:22px;flex:none;">
+      <span style="font-size:44px;font-weight:900;letter-spacing:-2px;color:var(--maas-petroleo);line-height:1;">maas<span style="color:var(--maas-verde);">.</span></span>
+      <span style="width:1px;height:44px;background:var(--border-default);"></span>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <span style="font-size:14px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--maas-petroleo-45);">Central de Inteligência</span>
+        <span style="font-size:31px;font-weight:800;letter-spacing:-.6px;color:var(--maas-petroleo);line-height:1;white-space:nowrap;">Resumo — Oficina</span>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
+        <span style="display:inline-flex;color:var(--maas-verde);">{{ icClock }}</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
+          <span style="font-size:34px;font-weight:800;letter-spacing:-1px;color:var(--maas-petroleo);font-variant-numeric:tabular-nums;line-height:1;">{{ clock }}</span>
+          <span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--maas-petroleo-45);letter-spacing:.3px;"><span style="width:9px;height:9px;border-radius:50%;background:{{ connColor }};animation:{{ connAnim }};"></span>{{ connLabel }}</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Manchete-síntese: o "lead" da operação hoje -->
+    <div style="display:flex;align-items:center;gap:16px;flex:none;background:var(--maas-petroleo);border-radius:var(--radius-card-lg);padding:18px 28px;">
+      <span style="display:inline-flex;flex:none;">{{ icHead }}</span>
+      <span style="font-size:27px;font-weight:800;letter-spacing:-.6px;color:#fff;line-height:1.15;">{{ headline }}</span>
+      <span style="margin-left:auto;flex:none;font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--maas-verde);">{{ headStatus }}</span>
+    </div>
+
+    <!-- Trilho de alertas -->
+    <div style="display:flex;gap:14px;align-items:stretch;flex:none;min-height:66px;">
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:2px;flex:none;padding-right:2px;">
+        <span style="font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--maas-petroleo-45);">Alertas</span>
+        <span style="font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--maas-petroleo-45);">ativos</span>
+      </div>
+      <sc-if value="{{ hasAlerts }}" hint-placeholder-val="{{ true }}">
+        <span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:52px;font-size:34px;font-weight:800;letter-spacing:-1px;color:#B83A32;font-variant-numeric:tabular-nums;">{{ alertCount }}</span>
+        <span style="width:1px;background:var(--border-default);flex:none;margin:6px 0;"></span>
+        <sc-for list="{{ activeAlerts }}" as="a" hint-placeholder-count="5">
+          <span style="display:inline-flex;align-items:center;gap:12px;padding:0 18px 0 15px;border-radius:14px;background:{{ a.bg }};border:1.5px solid {{ a.bd }};white-space:nowrap;">
+            <span style="display:inline-flex;flex:none;color:{{ a.fg }};">{{ a.iconEl }}</span>
+            <span style="font-size:30px;font-weight:800;letter-spacing:-1px;color:{{ a.fg }};font-variant-numeric:tabular-nums;line-height:1;">{{ a.valor }}</span>
+            <span style="display:flex;flex-direction:column;gap:1px;">
+              <span style="font-size:15px;font-weight:700;color:var(--maas-petroleo);line-height:1.1;">{{ a.label }}</span>
+              <span style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:{{ a.fg }};">{{ a.sev }}</span>
+            </span>
+          </span>
+        </sc-for>
+      </sc-if>
+      <sc-if value="{{ noAlerts }}">
+        <span style="display:inline-flex;align-items:center;gap:10px;font-size:19px;font-weight:700;color:var(--maas-verde-escuro-2);"><span style="width:11px;height:11px;border-radius:50%;background:currentColor;"></span>Operação sem alertas ativos</span>
+      </sc-if>
+    </div>
+
+    <!-- Blocos -->
+    <div style="display:flex;flex-direction:column;gap:18px;flex:1;min-height:0;">
+
+      <!-- Linha 1 -->
+      <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:18px;flex:0.82;min-height:0;">
+
+        <!-- 01 Solicitações e ordens de serviço -->
+        <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-card-lg);box-shadow:var(--shadow-card);padding:20px 26px 24px;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:11px;flex:none;">
+            <span style="font-size:13px;font-weight:800;color:var(--maas-verde);font-variant-numeric:tabular-nums;">01</span>
+            <span style="display:inline-flex;color:var(--maas-verde);">{{ icOS }}</span>
+            <span style="font-size:20px;font-weight:800;letter-spacing:-.3px;color:var(--maas-petroleo);white-space:nowrap;">Solicitações e ordens de serviço</span>
+            <span style="font-size:13px;font-weight:600;color:var(--maas-petroleo-45);white-space:nowrap;">O que entrou e o que já virou ordem</span>
+            <span style="flex:1;height:1px;background:var(--border-subtle);"></span>
+          </div>
+          <div style="display:flex;flex:1;align-items:stretch;min-height:0;">
+            <sc-for list="{{ blocoOS }}" as="item" hint-placeholder-count="5">
+              <sc-if value="{{ item.sep }}"><span style="width:1px;background:var(--border-subtle);margin:14px 0;"></span></sc-if>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:12px 18px;background:{{ item.bg }};border-radius:12px;margin:2px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="flex:none;display:inline-flex;">{{ item.iconEl }}</span>
+                  <span style="font-size:13.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:{{ item.labelColor }};line-height:1.15;">{{ item.label }}</span>
+                </div>
+                <sc-if value="{{ item.clickable }}" hint-placeholder-val="{{ true }}">
+                  <span onClick="{{ item.onOpen }}" role="button" tabindex="0" title="Ver detalhamento" style="font-size:66px;font-weight:800;letter-spacing:-3px;color:{{ item.valColor }};font-variant-numeric:tabular-nums;line-height:1;cursor:pointer;display:inline-flex;align-items:center;gap:12px;width:fit-content;" style-hover="opacity:.72;">{{ item.valor }}<span style="display:inline-flex;">{{ item.drillEl }}</span></span>
+                </sc-if>
+                <sc-if value="{{ item.notClickable }}">
+                  <span style="font-size:66px;font-weight:800;letter-spacing:-3px;color:{{ item.valColor }};font-variant-numeric:tabular-nums;line-height:1;">{{ item.valor }}</span>
+                </sc-if>
+                <div style="font-size:13px;color:var(--maas-petroleo-45);display:flex;gap:7px;align-items:center;flex-wrap:wrap;"><span>{{ item.rule }}</span><sc-if value="{{ item.manual }}"><span style="color:var(--maas-laranja-escuro);font-weight:700;">✎ manual</span></sc-if></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- 02 Clientes -->
+        <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-card-lg);box-shadow:var(--shadow-card);padding:20px 26px 24px;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:11px;flex:none;">
+            <span style="font-size:13px;font-weight:800;color:var(--maas-verde);font-variant-numeric:tabular-nums;">02</span>
+            <span style="display:inline-flex;color:var(--maas-verde);">{{ icClientes }}</span>
+            <span style="font-size:20px;font-weight:800;letter-spacing:-.3px;color:var(--maas-petroleo);white-space:nowrap;">Clientes</span>
+            <span style="font-size:13px;font-weight:600;color:var(--maas-petroleo-45);white-space:nowrap;">Compromissos de contrato e urgências</span>
+            <span style="flex:1;height:1px;background:var(--border-subtle);"></span>
+          </div>
+          <div style="display:flex;flex:1;align-items:stretch;min-height:0;">
+            <sc-for list="{{ blocoClientes }}" as="item" hint-placeholder-count="4">
+              <sc-if value="{{ item.sep }}"><span style="width:1px;background:var(--border-subtle);margin:14px 0;"></span></sc-if>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:12px 14px;background:{{ item.bg }};border-radius:12px;margin:2px;">
+                <div style="display:flex;align-items:center;gap:7px;">
+                  <span style="flex:none;display:inline-flex;">{{ item.iconEl }}</span>
+                  <span style="font-size:12.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:{{ item.labelColor }};line-height:1.15;">{{ item.label }}</span>
+                </div>
+                <sc-if value="{{ item.clickable }}" hint-placeholder-val="{{ true }}">
+                  <span onClick="{{ item.onOpen }}" role="button" tabindex="0" title="Ver detalhamento" style="font-size:60px;font-weight:800;letter-spacing:-3px;color:{{ item.valColor }};font-variant-numeric:tabular-nums;line-height:1;cursor:pointer;display:inline-flex;align-items:center;gap:10px;width:fit-content;" style-hover="opacity:.72;">{{ item.valor }}<span style="display:inline-flex;">{{ item.drillEl }}</span></span>
+                </sc-if>
+                <sc-if value="{{ item.notClickable }}">
+                  <span style="font-size:60px;font-weight:800;letter-spacing:-3px;color:{{ item.valColor }};font-variant-numeric:tabular-nums;line-height:1;">{{ item.valor }}</span>
+                </sc-if>
+                <div style="font-size:12.5px;color:var(--maas-petroleo-45);">{{ item.rule }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- Linha 2 -->
+      <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:18px;flex:1.18;min-height:0;">
+
+        <!-- 03 Tipo de serviço -->
+        <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-card-lg);box-shadow:var(--shadow-card);padding:20px 26px 22px;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:11px;flex:none;">
+            <span style="font-size:13px;font-weight:800;color:var(--maas-verde);font-variant-numeric:tabular-nums;">03</span>
+            <span style="display:inline-flex;color:var(--maas-verde);">{{ icTipo }}</span>
+            <span style="font-size:20px;font-weight:800;letter-spacing:-.3px;color:var(--maas-petroleo);white-space:nowrap;">Tipo de serviço</span>
+            <span style="font-size:13px;font-weight:600;color:var(--maas-petroleo-45);white-space:nowrap;">Do que a oficina está cuidando</span>
+            <span style="flex:1;height:1px;background:var(--border-subtle);"></span>
+          </div>
+          <div style="display:flex;flex-direction:column;justify-content:space-between;gap:14px;flex:1;min-height:0;padding:10px 0;">
+            <sc-for list="{{ tipoRows }}" as="t" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:16px;">
+                <span style="width:140px;font-size:16px;font-weight:600;color:var(--maas-petroleo);">{{ t.k }}</span>
+                <span style="flex:1;height:24px;background:var(--surface-sunken);border-radius:5px;overflow:hidden;"><span style="display:block;height:100%;width:{{ t.pct }};background:{{ t.color }};"></span></span>
+                <span style="width:52px;text-align:right;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--maas-petroleo);letter-spacing:-.5px;">{{ t.n }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- 04 Análises e indicadores -->
+        <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-card-lg);box-shadow:var(--shadow-card);padding:20px 26px 22px;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:11px;flex:none;">
+            <span style="font-size:13px;font-weight:800;color:var(--maas-verde);font-variant-numeric:tabular-nums;">04</span>
+            <span style="display:inline-flex;color:var(--maas-verde);">{{ icKpi }}</span>
+            <span style="font-size:20px;font-weight:800;letter-spacing:-.3px;color:var(--maas-petroleo);white-space:nowrap;">Análises e indicadores</span>
+            <span style="font-size:13px;font-weight:600;color:var(--maas-petroleo-45);white-space:nowrap;">Onde travou e capacidade para resolver</span>
+            <span style="flex:1;height:1px;background:var(--border-subtle);"></span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:14px;flex:1;min-height:0;margin-top:14px;">
+
+            <!-- Tile: Idade das O.S. abertas -->
+            <div style="background:rgba(24,59,72,.035);border:1px solid var(--border-subtle);border-radius:14px;padding:15px 18px;display:flex;flex-direction:column;min-height:0;">
+              <div style="display:flex;align-items:center;justify-content:space-between;flex:none;margin-bottom:10px;">
+                <span style="font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--maas-petroleo-45);">Idade das O.S. abertas</span>
+                <span style="font-size:12px;font-weight:700;color:var(--maas-petroleo-45);">{{ agingTotal }} abertas</span>
+              </div>
+              <div style="display:flex;flex-direction:column;justify-content:space-between;flex:1;min-height:0;">
+                <sc-for list="{{ agingRows }}" as="a" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:11px;">
+                    <span style="width:78px;font-size:13px;font-weight:600;color:var(--maas-petroleo-60);">{{ a.k }}</span>
+                    <span style="flex:1;height:14px;background:var(--surface-card);border-radius:4px;overflow:hidden;"><span style="display:block;height:100%;width:{{ a.pct }};background:{{ a.color }};"></span></span>
+                    <span style="width:34px;text-align:right;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--maas-petroleo);">{{ a.n }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- Tile: Capacidade × demanda -->
+            <div style="background:rgba(24,59,72,.035);border:1px solid var(--border-subtle);border-radius:14px;padding:15px 18px;display:flex;flex-direction:column;min-height:0;">
+              <div style="font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--maas-petroleo-45);margin-bottom:10px;flex:none;">Capacidade × demanda</div>
+              <div style="display:flex;flex-direction:column;justify-content:space-between;flex:1;min-height:0;">
+                <div style="display:flex;gap:22px;">
+                  <div><div style="font-size:34px;font-weight:800;color:var(--maas-petroleo);font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-1px;">{{ cap.backlog }}</div><div style="font-size:11px;font-weight:600;color:var(--maas-petroleo-60);text-transform:uppercase;letter-spacing:.4px;margin-top:6px;">O.S. abertas</div></div>
+                  <div><div style="font-size:34px;font-weight:800;color:var(--maas-petroleo);font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-1px;">{{ cap.mec }}</div><div style="font-size:11px;font-weight:600;color:var(--maas-petroleo-60);text-transform:uppercase;letter-spacing:.4px;margin-top:6px;">Mecânicos</div></div>
+                  <div><div style="font-size:34px;font-weight:800;color:var(--maas-laranja-escuro);font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-1px;">{{ cap.ratio }}</div><div style="font-size:11px;font-weight:600;color:var(--maas-petroleo-60);text-transform:uppercase;letter-spacing:.4px;margin-top:6px;">O.S./mec.</div></div>
+                </div>
+                <div>
+                  <div style="height:16px;border-radius:4px;overflow:hidden;display:flex;background:var(--surface-card);">
+                    <span style="height:100%;width:{{ cap.workingPct }};background:var(--maas-verde);"></span>
+                    <span style="height:100%;width:{{ cap.availPct }};background:var(--maas-verde-escuro);opacity:.45;"></span>
+                    <span style="height:100%;width:{{ cap.breakPct }};background:var(--maas-petroleo-25);"></span>
+                  </div>
+                  <div style="display:flex;gap:16px;margin-top:9px;font-size:12px;color:var(--maas-petroleo-60);">
+                    <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:2px;background:var(--maas-verde);"></span>Trabalhando · {{ cap.workingN }}</span>
+                    <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:2px;background:var(--maas-verde-escuro);opacity:.45;"></span>Disponível · {{ cap.availN }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tile: Preventivas -->
+            <div style="background:rgba(24,59,72,.035);border:1px solid var(--border-subtle);border-radius:14px;padding:15px 18px;display:flex;flex-direction:column;min-height:0;">
+              <div style="font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--maas-petroleo-45);margin-bottom:10px;flex:none;">Preventivas</div>
+              <div style="display:flex;flex-direction:column;justify-content:space-between;flex:1;min-height:0;">
+                <sc-for list="{{ prevRows }}" as="p" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:11px;">
+                    <span style="width:100px;font-size:13px;font-weight:600;color:var(--maas-petroleo-60);">{{ p.k }}</span>
+                    <span style="flex:1;height:14px;background:var(--surface-card);border-radius:4px;overflow:hidden;"><span style="display:block;height:100%;width:{{ p.pct }};background:{{ p.color }};"></span></span>
+                    <span style="width:34px;text-align:right;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;color:{{ p.color }};">{{ p.n }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- Tile: O.S. mais antigas -->
+            <div style="background:rgba(24,59,72,.035);border:1px solid var(--border-subtle);border-radius:14px;padding:15px 18px;display:flex;flex-direction:column;min-height:0;">
+              <div style="display:flex;align-items:center;justify-content:space-between;flex:none;margin-bottom:6px;">
+                <span style="font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--maas-petroleo-45);">O.S. mais antigas</span>
+                <span style="font-size:12px;font-weight:700;color:#B83A32;">priorizar</span>
+              </div>
+              <div style="display:flex;flex-direction:column;justify-content:space-between;flex:1;min-height:0;">
+                <sc-for list="{{ priorityRows }}" as="r" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:14px;padding:6px 0;border-bottom:1px solid var(--border-subtle);">
+                    <span style="width:66px;text-align:right;font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:{{ r.ageColor }};line-height:1;letter-spacing:-.5px;flex:none;">{{ r.dias }}d</span>
+                    <span style="flex:1;font-size:16px;font-weight:800;color:var(--maas-petroleo);white-space:nowrap;letter-spacing:-.2px;">{{ r.placaMain }}</span>
+                    <span style="flex:none;display:inline-block;padding:4px 11px;border-radius:var(--radius-pill);font-size:11.5px;font-weight:700;color:{{ r.oslaFg }};background:{{ r.oslaBg }};border:1.5px solid {{ r.oslaBd }};">{{ r.osla }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aguardando primeiro dado do servidor -->
+  <sc-if value="{{ loading }}">
+    <div style="position:fixed;inset:0;background:rgba(24,59,72,.72);display:flex;align-items:center;justify-content:center;z-index:200;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:16px;background:var(--surface-page);padding:38px 54px;border-radius:var(--radius-card-lg);box-shadow:0 32px 90px rgba(24,59,72,.4);">
+        <span style="font-size:30px;font-weight:900;letter-spacing:-1px;color:var(--maas-petroleo);">maas<span style="color:var(--maas-verde);">.</span></span>
+        <span style="font-size:17px;font-weight:700;color:var(--maas-petroleo);">Conectando à Central de Inteligência…</span>
+        <span style="font-size:13px;color:var(--maas-petroleo-45);">O painel carrega assim que o primeiro ciclo de dados chegar.</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Página de detalhamento (drill-down ao clicar no número) -->
+  <sc-if value="{{ detailOpen }}">
+    <div onClick="{{ closeDetail }}" style="position:fixed;inset:0;background:rgba(24,59,72,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:48px;">
+      <div onClick="{{ stop }}" style="width:min(1240px,95vw);max-height:88vh;background:var(--surface-page);border-radius:var(--radius-card-lg);box-shadow:0 32px 90px rgba(24,59,72,.4);display:flex;flex-direction:column;overflow:hidden;">
+        <!-- Cabeçalho -->
+        <div style="display:flex;align-items:center;gap:16px;padding:26px 32px;border-bottom:1px solid var(--border-subtle);flex:none;">
+          <span style="display:inline-flex;flex:none;width:52px;height:52px;border-radius:14px;background:var(--maas-verde-16);align-items:center;justify-content:center;">{{ detailIconEl }}</span>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <div style="display:flex;align-items:baseline;gap:12px;">
+              <span style="font-size:24px;font-weight:800;letter-spacing:-.4px;color:var(--maas-petroleo);">{{ detailTitle }}</span>
+              <span style="font-size:14px;font-weight:700;color:var(--maas-verde-escuro-2);background:var(--maas-verde-16);padding:3px 11px;border-radius:var(--radius-pill);white-space:nowrap;">{{ detailCount }} registros</span>
+            </div>
+            <span style="font-size:14px;color:var(--maas-petroleo-45);">{{ detailSubtitle }}</span>
+          </div>
+          <span onClick="{{ closeDetail }}" role="button" tabindex="0" title="Fechar" style="margin-left:auto;flex:none;width:40px;height:40px;border-radius:10px;border:1px solid var(--border-default);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--surface-sunken);">{{ icClose }}</span>
+        </div>
+        <!-- Corpo -->
+        <div style="overflow-y:auto;overflow-x:auto;flex:1;min-height:0;">
+          <sc-if value="{{ detailEmpty }}">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:80px 20px;">
+              <span style="display:inline-flex;">{{ icSearch }}</span>
+              <span style="font-size:17px;font-weight:700;color:var(--maas-petroleo-60);">Nenhum registro no momento</span>
+              <span style="font-size:14px;color:var(--maas-petroleo-45);">Este indicador está zerado — não há solicitações ou ordens a listar.</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasDetailRows }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid;grid-template-columns:110px 100px 100px 120px minmax(150px,1fr) 132px;min-width:0;padding:14px 28px;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Abertura</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Solic.</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Ordem</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Veículo</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Serviço</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);text-align:right;">Situação</span>
+            </div>
+            <sc-for list="{{ detailRows }}" as="r" hint-placeholder-count="6">
+              <div style="display:grid;grid-template-columns:110px 100px 100px 120px minmax(150px,1fr) 132px;min-width:0;padding:15px 28px;border-bottom:1px solid var(--border-subtle);align-items:center;font-variant-numeric:tabular-nums;" style-hover="background:var(--surface-sunken);">
+                <span style="font-size:14px;color:var(--maas-petroleo-60);">{{ r.abertura }}</span>
+                <span style="font-size:14px;color:var(--maas-petroleo-60);">{{ r.ss }}</span>
+                <span style="font-size:14px;font-weight:700;color:var(--maas-petroleo);">{{ r.os }}</span>
+                <span style="font-size:14px;font-weight:800;color:var(--maas-petroleo);letter-spacing:-.2px;">{{ r.placa }}</span>
+                <span style="font-size:14px;color:var(--maas-petroleo);">{{ r.serv }}</span>
+                <span style="text-align:right;"><span style="display:inline-block;padding:5px 13px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:700;color:{{ r.stStyle.fg }};background:{{ r.stStyle.bg }};border:1.5px solid {{ r.stStyle.bd }};white-space:nowrap;">{{ r.st }}</span></span>
+              </div>
+            </sc-for>
+          </sc-if>
+        </div>
+        <!-- Rodapé -->
+        <div style="display:flex;align-items:center;gap:10px;padding:16px 32px;border-top:1px solid var(--border-subtle);flex:none;background:var(--surface-card);">
+          <span style="font-size:13px;color:var(--maas-petroleo-45);">Fonte: Central de Inteligência · dados recalculados a cada 5 min</span>
+          <span onClick="{{ closeDetail }}" role="button" tabindex="0" style="margin-left:auto;font-size:14px;font-weight:700;color:#fff;background:var(--maas-petroleo);padding:11px 22px;border-radius:10px;cursor:pointer;" style-hover="background:var(--maas-petroleo-70);">Voltar ao painel</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  // ================================================================
+  //  vReal-time — mesmos componentes visuais do vBeta; os números
+  //  agora chegam do backend via WebSocket (payload de kpis.py).
+  //  Nenhum dado fica hardcoded aqui e o navegador nunca fala
+  //  com o BigQuery diretamente.
+  // ================================================================
+  state = { clock: '', scale: 1, detailId: null, data: null, conn: 'connecting' };
+
+  componentDidMount() {
+    this.tick();
+    this._t = setInterval(() => this.tick(), 1000);
+    this.fit();
+    this._r = () => this.fit();
+    window.addEventListener('resize', this._r);
+    this.connectWS();
+  }
+  componentWillUnmount() {
+    clearInterval(this._t);
+    clearInterval(this._ping);
+    clearTimeout(this._rc);
+    window.removeEventListener('resize', this._r);
+    if (this._ws) { this._ws.onclose = null; this._ws.close(); }
+  }
+
+  // ---- Camada WebSocket: recebe payloads e re-renderiza só o que mudou ----
+  connectWS() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(proto + '://' + location.host + '/ws');
+    this._ws = ws;
+    ws.onopen = () => {
+      this.setState({ conn: 'live' });
+      clearInterval(this._ping);
+      this._ping = setInterval(() => { try { ws.send('ping'); } catch (e) {} }, 30000);
+    };
+    ws.onmessage = (ev) => {
+      try { this.setState({ data: JSON.parse(ev.data), conn: 'live' }); }
+      catch (e) { console.error('payload inválido', e); }
+    };
+    ws.onclose = () => {
+      clearInterval(this._ping);
+      this.setState({ conn: 'off' });
+      this._rc = setTimeout(() => this.connectWS(), 5000);  // reconexão automática
+    };
+    ws.onerror = () => { try { ws.close(); } catch (e) {} };
+  }
+
+  fit() {
+    const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    this.setState({ scale: Math.round(s * 1000) / 1000 });
+  }
+  tick() {
+    this.setState({ clock: new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' }) });
+  }
+
+  // Ícones Lucide (outline, stroke 1.6) inline — spec MaaS
+  ic(name, size = 16, color = 'currentColor') {
+    const R = React;
+    const p = (d) => R.createElement('path', { d });
+    const c = (cx, cy, r) => R.createElement('circle', { cx, cy, r });
+    const ln = (x1, y1, x2, y2) => R.createElement('line', { x1, y1, x2, y2 });
+    const rc = (x, y, w, h, rx) => R.createElement('rect', { x, y, width: w, height: h, rx });
+    const M = {
+      alertTriangle: [p('m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z'), ln(12,9,12,13), p('M12 17h.01')],
+      clipboard: [rc(8,2,8,4,1), p('M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'), p('M12 11h4'), p('M12 16h4'), p('M8 11h.01'), p('M8 16h.01')],
+      inbox: [p('M22 12h-6l-2 3h-4l-2-3H2'), p('M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z')],
+      alarm: [c(12,13,8), p('M12 9v4l2 2'), p('M5 3 2 6'), p('M22 6l-3-3'), p('M6.38 18.7 4 21'), p('M17.64 18.67 20 21')],
+      badgeCheck: [p('M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z'), p('m9 12 2 2 4-4')],
+      zap: [p('M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z')],
+      rotate: [p('M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8'), p('M3 3v5h5')],
+      lifebuoy: [c(12,12,10), c(12,12,4), ln(4.93,4.93,9.17,9.17), ln(14.83,14.83,19.07,19.07), ln(14.83,9.17,19.07,4.93), ln(4.93,19.07,9.17,14.83)],
+      fileText: [p('M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z'), p('M14 2v4a2 2 0 0 0 2 2h4'), p('M16 13H8'), p('M16 17H8'), p('M10 9H8')],
+      car: [p('M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2'), c(7,17,2), c(17,17,2)],
+      users: [p('M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'), c(9,7,4), p('M22 21v-2a4 4 0 0 0-3-3.87'), p('M16 3.13a4 4 0 0 1 0 7.75')],
+      clock: [c(12,12,10), p('M12 6v6l4 2')],
+      hourglass: [p('M5 22h14'), p('M5 2h14'), p('M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22'), p('M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2')],
+      layers: [p('M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z'), p('M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12'), p('M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17')],
+      activity: [p('M22 12h-4l-3 9L9 3l-3 9H2')],
+      maximize: [p('M8 3H5a2 2 0 0 0-2 2v3'), p('M21 8V5a2 2 0 0 0-2-2h-3'), p('M3 16v3a2 2 0 0 0 2 2h3'), p('M16 21h3a2 2 0 0 0 2-2v-3')],
+      x: [p('M18 6 6 18'), p('M6 6l12 12')],
+      search: [c(11,11,8), p('m21 21-4.3-4.3')],
+    };
+    return R.createElement('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color, strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', style: { display: 'block', flex: 'none' } }, ...(M[name] || []));
+  }
+
+  // Payload vazio — usado só até o primeiro dado chegar (fica sob o overlay)
+  emptyData() {
+    return {
+      geradoEm: null,
+      kpis: { ssAguardando:0, osAbertas:0, osForaPrazo:0, qualidade:0, retorno:0,
+              clientesEsp:0, clausula:0, reservaLimite:0, sos:0,
+              prevAtrasadas:0, prevFinal:0, prevInicial:0 },
+      mecanicos: { trabalhando:0, disponivel:0, pausa:0 },
+      tipoServico: [], aging: { d0_2:0, d3_7:0, d8_30:0, d30p:0 }, detalhes: {},
+    };
+  }
+
+  renderVals() {
+    const D = this.state.data || this.emptyData();
+    const K = D.kpis;
+    const agora = D.geradoEm ? new Date(D.geradoEm) : new Date();
+
+    // --- status da conexão (canto do relógio) ---
+    const CONN = {
+      live:       { label: 'ao vivo · recálculo a cada 5 min', color: 'var(--maas-verde)',          anim: 'pulseDot 2s infinite' },
+      connecting: { label: 'conectando ao servidor…',          color: 'var(--maas-laranja)',        anim: 'pulseDot 1s infinite' },
+      off:        { label: 'sem conexão · reconectando…',      color: '#B83A32',                    anim: 'pulseDot 1s infinite' },
+    };
+    const conn = CONN[this.state.conn] || CONN.connecting;
+
+    const CLR = {
+      neutral: { val:'var(--maas-petroleo)' },
+      ok:      { val:'var(--maas-petroleo)' },
+      warn:    { val:'var(--maas-laranja-escuro)' },
+      crit:    { val:'#B83A32' },
+    };
+    const mk = (arr) => arr.map((c, i) => {
+      // regra de severidade dinâmica: crit/warn só quando o valor dispara
+      const status = c.valor > 0 ? c.status : (c.status === 'neutral' ? 'neutral' : 'ok');
+      let valColor = (CLR[status] || CLR.neutral).val;
+      const zero = c.valor === 0;
+      if (zero && (status === 'ok' || status === 'neutral')) valColor = 'var(--maas-petroleo-25)';
+      const hero = status === 'crit';
+      const clickable = c.valor > 0;
+      return {
+        iconEl: this.ic(c.icon, 22, hero ? '#B83A32' : 'var(--maas-petroleo-45)'),
+        label: c.label, valor: c.valor, rule: c.rule, manual: !!c.manual,
+        valColor, sep: i > 0, bg: hero ? 'rgba(217,83,79,.06)' : 'transparent',
+        labelColor: hero ? '#B83A32' : 'var(--maas-petroleo-60)',
+        clickable,
+        notClickable: !clickable,
+        onOpen: clickable ? () => this.setState({ detailId: c.id }) : null,
+        drillEl: clickable ? this.ic('maximize', 20, 'var(--maas-petroleo-25)') : null,
+        _status: status,
+      };
+    });
+
+    // 01 Solicitações e ordens de serviço — mesmos cartões, valores do payload
+    const osDefs = [
+      { id:'ssAguardando', icon:'inbox',      label:'S.S. aguardando',       valor:K.ssAguardando, status:'warn',    rule:'alerta se > 0' },
+      { id:'osAbertas',    icon:'clipboard',  label:'Total O.S. abertas',    valor:K.osAbertas,    status:'neutral', rule:'informativo' },
+      { id:'osForaPrazo',  icon:'alarm',      label:'O.S. fora do prazo',    valor:K.osForaPrazo,  status:'crit',    rule:'crítico se > 0' },
+      { id:'qualidade',    icon:'badgeCheck', label:'Controle de qualidade', valor:K.qualidade,    status:'warn',    rule:'atenção se > 0' },
+      { id:'retorno',      icon:'rotate',     label:'Retorno',               valor:K.retorno,      status:'warn',    rule:'atenção se > 0', manual:true },
+    ];
+    // 02 Clientes
+    const clienteDefs = [
+      { id:'clientesEsp',  icon:'zap',      label:'Clientes esp. / serv. rápido', valor:K.clientesEsp,   status:'warn', rule:'atenção se > 0' },
+      { id:'clausula',     icon:'fileText', label:'Cláusula contratual',          valor:K.clausula,      status:'crit', rule:'crítico se > 0' },
+      { id:'reservaLimite',icon:'car',      label:'Reservas no limite',           valor:K.reservaLimite, status:'crit', rule:'crítico se > 0' },
+      { id:'sos',          icon:'lifebuoy', label:'S.O.S',                        valor:K.sos,           status:'crit', rule:'crítico se > 0' },
+    ];
+    const blocoOS = mk(osDefs);
+    const blocoClientes = mk(clienteDefs);
+
+    // Trilho de alertas — só o que disparou
+    const railStyle = { crit:{fg:'#B83A32',bg:'rgba(217,83,79,.10)',bd:'rgba(217,83,79,.40)'}, warn:{fg:'var(--maas-laranja-escuro)',bg:'var(--maas-laranja-16)',bd:'var(--maas-laranja-30)'} };
+    const alertSrc = [...blocoOS, ...blocoClientes]
+      .filter(d => d.valor > 0 && (d._status === 'crit' || d._status === 'warn'))
+      .map(d => ({ label:d.label, valor:d.valor, status:d._status }));
+    if (K.prevAtrasadas > 0) alertSrc.push({ label:'Preventivas atrasadas', valor:K.prevAtrasadas, status:'crit' });
+    const activeAlerts = alertSrc
+      .sort((a,b) => (a.status==='crit'?0:1) - (b.status==='crit'?0:1))
+      .map(d => ({ label:d.label, valor:d.valor, sev:d.status==='crit'?'Crítico':'Atenção', iconEl:this.ic(d.status==='crit'?'alertTriangle':'alarm', 22), ...railStyle[d.status] }));
+
+    // 03 Tipo de serviço
+    const tipoRaw = D.tipoServico || [];
+    const maxTipo = Math.max(1, ...tipoRaw.map(t=>t.n));
+    const tipoColor = { 'Sinistro':'var(--maas-laranja)', 'Socorro':'#D9534F', 'Corretiva':'var(--maas-laranja)' };
+    const tipoRows = tipoRaw.map(t => ({ k:t.k, n:t.n, pct:Math.max(t.n/maxTipo*100,2)+'%', color:tipoColor[t.k] || 'var(--maas-verde)' }));
+
+    // 04 Análises — aging, preventivas, capacidade, prioridades
+    const A = D.aging;
+    const agingRaw = [
+      {k:'0–2 dias',  n:A.d0_2,  color:'var(--maas-verde)'},
+      {k:'3–7 dias',  n:A.d3_7,  color:'var(--maas-petroleo-45)'},
+      {k:'8–30 dias', n:A.d8_30, color:'var(--maas-laranja)'},
+      {k:'> 30 dias', n:A.d30p,  color:'#D9534F'},
+    ];
+    const maxAge = Math.max(1, ...agingRaw.map(a=>a.n));
+    const agingRows = agingRaw.map(a => ({ ...a, pct:(a.n/maxAge*100)+'%' }));
+    const agingTotal = agingRaw.reduce((s,a)=>s+a.n,0);
+
+    const prevRaw = [
+      {k:'Atrasadas',       n:K.prevAtrasadas, status:'crit'},
+      {k:'Período final',   n:K.prevFinal,     status:'warn'},
+      {k:'Período inicial', n:K.prevInicial,   status:'ok'},
+    ];
+    const prevColor = { crit:'#D9534F', warn:'var(--maas-laranja)', ok:'var(--maas-verde)' };
+    const maxPrev = Math.max(1, ...prevRaw.map(p=>p.n));
+    const prevRows = prevRaw.map(p => ({ k:p.k, n:p.n, pct:(p.n/maxPrev*100)+'%', color:prevColor[p.status] }));
+
+    const Mq = D.mecanicos;
+    const backlog = K.osAbertas, working = Mq.trabalhando, avail = Mq.disponivel, brk = Mq.pausa;
+    const efetivo = Math.max(1, working + avail + brk);
+    const ratio = (backlog / efetivo).toFixed(1);
+    const cap = { backlog, mec: working+avail+brk, ratio,
+      workingN: working, availN: avail,
+      workingPct:(working/efetivo*100)+'%', availPct:(avail/efetivo*100)+'%', breakPct:(brk/efetivo*100)+'%' };
+
+    // O.S. mais antigas — derivado do drill-down "fora do prazo"
+    const sla = (t) => {
+      if (t==='Fora do Prazo') return { fg:'#B83A32', bg:'rgba(217,83,79,.10)', bd:'rgba(217,83,79,.35)' };
+      if (t==='Sem SLA') return { fg:'var(--maas-petroleo-60)', bg:'transparent', bd:'var(--maas-petroleo-18)' };
+      return { fg:'var(--maas-verde-escuro-2)', bg:'var(--maas-verde-16)', bd:'transparent' };
+    };
+    const priorityRows = ((D.detalhes && D.detalhes.osForaPrazo) || [])
+      .filter(o => o.aberturaIso)
+      .map(o => ({ ...o, dias: Math.max(0, Math.floor((agora - new Date(o.aberturaIso)) / 86400000)) }))
+      .sort((a,b) => b.dias - a.dias)
+      .slice(0,3)
+      .map(o => {
+        const s = sla(o.st);
+        return { dias:o.dias, ageColor: o.dias>30 ? '#B83A32' : 'var(--maas-petroleo)',
+          placaMain: (o.placa && o.placa!=='—') ? o.placa : ('O.S. '+o.os),
+          osla:o.st, oslaFg:s.fg, oslaBg:s.bg, oslaBd:s.bd };
+      });
+
+    // Manchete-síntese dinâmica
+    const partes = [];
+    if (K.osForaPrazo > 0)   partes.push(K.osForaPrazo + ' O.S. fora do prazo');
+    if (K.prevAtrasadas > 0) partes.push(K.prevAtrasadas + ' preventivas atrasadas');
+    if (K.sos > 0)           partes.push(K.sos + ' S.O.S em atendimento');
+    partes.push(ratio.replace('.', ',') + ' O.S. por mecânico');
+    const temCrit = activeAlerts.some(a => a.sev === 'Crítico');
+
+    return {
+      scale: this.state.scale,
+      clock: this.state.clock,
+      loading: !this.state.data,
+      connLabel: conn.label, connColor: conn.color, connAnim: conn.anim,
+      headline: partes.join(' · '),
+      headStatus: temCrit ? 'Atenção · priorizar' : 'Operação normal',
+      icHead: this.ic('alertTriangle',30,'var(--maas-verde)'),
+      blocoOS, blocoClientes, tipoRows, agingRows, agingTotal, prevRows, cap, priorityRows,
+      activeAlerts, hasAlerts: activeAlerts.length > 0, noAlerts: activeAlerts.length === 0, alertCount: activeAlerts.length,
+      ...this.buildDetail(),
+      icClock:    this.ic('clock',28,'var(--maas-verde)'),
+      icOS:       this.ic('clipboard',22,'var(--maas-verde)'),
+      icClientes: this.ic('users',22,'var(--maas-verde)'),
+      icTipo:     this.ic('layers',22,'var(--maas-verde)'),
+      icKpi:      this.ic('activity',22,'var(--maas-verde)'),
+    };
+  }
+
+  // ---- Drill-down: título/ícone fixos por KPI, linhas vindas do payload ----
+  detailMeta() {
+    return {
+      ssAguardando:  { title:'S.S. aguardando',              icon:'inbox',      sub:(n)=> n + ' solicitações ainda sem ordem de serviço' },
+      osAbertas:     { title:'Total O.S. abertas',           icon:'clipboard',  sub:(n)=> 'Amostra das ' + n + ' ordens mais recentes com status aberto' },
+      osForaPrazo:   { title:'O.S. fora do prazo',           icon:'alarm',      sub:(n)=> n + ' ordens fora do prazo por P.FIM MAN · recalculado a cada 5 min' },
+      qualidade:     { title:'Controle de qualidade',        icon:'badgeCheck', sub:(n)=> n + ' O.S. enviada(s) pela manutenção para o controle de qualidade' },
+      retorno:       { title:'Retorno',                      icon:'rotate',     sub:()=> 'Indicador manual — sem fonte automática por enquanto' },
+      clientesEsp:   { title:'Clientes esp. / serv. rápido', icon:'zap',        sub:(n)=> n ? n + ' clientes aguardando' : 'Nenhum cliente aguardando no momento' },
+      clausula:      { title:'Cláusula contratual',          icon:'fileText',   sub:(n)=> n + ' veículos com contrato, fora do prazo, sem reserva apontada' },
+      reservaLimite: { title:'Reservas no limite',           icon:'car',        sub:(n)=> n ? n + ' contratos no limite' : 'Nenhum contrato no limite de reservas' },
+      sos:           { title:'S.O.S',                        icon:'lifebuoy',   sub:(n)=> n + ' chamados de socorro em atendimento' },
+    };
+  }
+
+  buildDetail() {
+    const id = this.state.detailId;
+    if (!id) return { detailOpen:false, detailRows:[], hasDetailRows:false, detailTitle:'', detailSubtitle:'', detailCount:0, detailIconEl:null, detailEmpty:false, closeDetail:()=>{}, stop:(e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); }, icClose:null, icSearch:null };
+    const meta = this.detailMeta()[id] || { title:'', icon:'clipboard', sub:()=> '' };
+    const chip = (t) => {
+      if (t==='Fora do Prazo') return { fg:'#B83A32', bg:'rgba(217,83,79,.10)', bd:'rgba(217,83,79,.35)' };
+      if (t==='No prazo')      return { fg:'var(--maas-verde-escuro-2)', bg:'var(--maas-verde-16)', bd:'transparent' };
+      if (t==='Sem SLA')       return { fg:'var(--maas-petroleo-60)', bg:'transparent', bd:'var(--maas-petroleo-18)' };
+      if (t==='Crítico')       return { fg:'#B83A32', bg:'rgba(217,83,79,.10)', bd:'rgba(217,83,79,.35)' };
+      return { fg:'var(--maas-petroleo-60)', bg:'var(--surface-sunken)', bd:'transparent' };
+    };
+    const raw = (this.state.data && this.state.data.detalhes && this.state.data.detalhes[id]) || [];
+    const rows = raw.map(r => ({ ...r, stStyle: chip(r.st) }));
+    return {
+      detailOpen: true,
+      detailTitle: meta.title,
+      detailSubtitle: meta.sub(rows.length),
+      detailCount: rows.length,
+      detailRows: rows,
+      hasDetailRows: rows.length > 0,
+      detailEmpty: rows.length === 0,
+      detailIconEl: this.ic(meta.icon, 26, 'var(--maas-verde)'),
+      icClose: this.ic('x', 22, 'var(--maas-petroleo)'),
+      icSearch: this.ic('search', 34, 'var(--maas-petroleo-25)'),
+      stop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
+      closeDetail: () => this.setState({ detailId: null }),
+    };
+  }
+}
+</script>
+</body>
+</html>

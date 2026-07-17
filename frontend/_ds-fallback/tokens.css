@@ -1,0 +1,45 @@
+/* ============================================================
+   FALLBACK do design system MAAS
+   ------------------------------------------------------------
+   Este arquivo existe só para o painel renderizar quando a pasta
+   real `_ds/maas-design-system-.../` não estiver presente.
+   Ele é carregado ANTES dos CSS do _ds — se a pasta real existir,
+   os valores oficiais sobrescrevem estes automaticamente.
+
+   >>> Ação recomendada: copie a pasta `_ds` do seu protótipo
+   original para dentro de /frontend e ignore este arquivo.
+
+   O petróleo #183B48 foi derivado do rgba(24,59,72,…) já usado
+   no protótipo; os demais são aproximações da paleta MAAS.
+   ============================================================ */
+:root {
+  --maas-petroleo:        #183B48;
+  --maas-petroleo-70:     rgba(24, 59, 72, .70);
+  --maas-petroleo-60:     rgba(24, 59, 72, .60);
+  --maas-petroleo-45:     rgba(24, 59, 72, .45);
+  --maas-petroleo-25:     rgba(24, 59, 72, .25);
+  --maas-petroleo-18:     rgba(24, 59, 72, .18);
+
+  --maas-verde:           #34C97B;
+  --maas-verde-16:        rgba(52, 201, 123, .16);
+  --maas-verde-escuro:    #1E7A50;
+  --maas-verde-escuro-2:  #17603F;
+
+  --maas-laranja:         #E8A13D;
+  --maas-laranja-escuro:  #C97B24;
+  --maas-laranja-16:      rgba(232, 161, 61, .16);
+  --maas-laranja-30:      rgba(232, 161, 61, .30);
+
+  --surface-page:         #F2F4F4;
+  --surface-card:         #FFFFFF;
+  --surface-sunken:       #E8ECEC;
+
+  --border-default:       rgba(24, 59, 72, .22);
+  --border-subtle:        rgba(24, 59, 72, .10);
+
+  --radius-card-lg:       18px;
+  --radius-pill:          999px;
+  --shadow-card:          0 6px 22px rgba(24, 59, 72, .06);
+
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
