@@ -27,3 +27,13 @@ def fetch_manutencao() -> list[dict]:
 
 def fetch_stj() -> list[dict]:
     return _read("STJ.csv")
+
+
+def fetch_monitoramento() -> list[dict]:
+    """Sem export local de TQB_Monitoramento ainda — modo csv segue sem
+    esse cruzamento (clientesEsp/clausula caem para 0 até existir o CSV)."""
+    caminho = config.CSV_DIR / "TQB_Monitoramento.csv"
+    if not caminho.exists():
+        log.info("TQB_Monitoramento.csv não encontrado — pulando cruzamento de SLA")
+        return []
+    return _read("TQB_Monitoramento.csv")

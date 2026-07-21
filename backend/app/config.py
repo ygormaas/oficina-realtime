@@ -53,13 +53,13 @@ POLL_SECONDS = _int("POLL_SECONDS", 300)   # 300s = 5 min (igual ao rótulo do p
 # (a base tem 1.081 preventivas de plano antigo vencidas em 2024 — ruído).
 PREV_RETRO_DIAS = _int("PREV_RETRO_DIAS", 90)
 
-# --- Valores manuais / sem fonte automática nas views atuais -------------------
-# Estes KPIs existem no painel mas não têm coluna em STJ/STJ_Manutencao.
-# Entram por aqui até existir fonte (ver README, seção "Pendências").
+# --- Valores manuais / sem fonte automática confirmada -------------------------
+# Estes KPIs existem no painel mas não têm coluna/tabela confirmada ainda
+# (ver "LIMITES CONHECIDOS" em kpis.py e README, seção "Pendências").
+# "Clientes esp." SAIU daqui — agora vem de TQB_Monitoramento.Xesper (kpis.py).
 KPI_RETORNO_MANUAL       = _int("KPI_RETORNO_MANUAL", 0)   # 0 = usa regra automática (XRETORN)
 KPI_SS_AGUARDANDO_MANUAL = _int("KPI_SS_AGUARDANDO_MANUAL", 0)
 KPI_QUALIDADE_MANUAL     = _int("KPI_QUALIDADE_MANUAL", 0)
-KPI_CLIENTES_ESP_MANUAL  = _int("KPI_CLIENTES_ESP_MANUAL", 0)
 KPI_RESERVA_LIMITE_MANUAL= _int("KPI_RESERVA_LIMITE_MANUAL", 0)
 
 # Efetivo de mecânicos (Capacidade × demanda). Se um dia isso vier de uma

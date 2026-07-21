@@ -1,11 +1,14 @@
 """
 Acesso ao BigQuery — o equivalente ao passo "Fonte" do seu Power Query,
-agora com as DUAS views do modelo:
+agora com TRÊS views do modelo:
 
-    STJ_Manutencao  → completa (é pequena: a oficina agora)
-    STJ             → só as colunas e linhas que a modelagem usa
-                      (abertas: SITUACA='L' e TERMINO='N'), para não
-                      trafegar as ~37 mil linhas do histórico inteiro.
+    STJ_Manutencao   → completa (é pequena: a oficina agora)
+    STJ              → só as colunas e linhas que a modelagem usa
+                       (abertas: SITUACA='L' e TERMINO='N'), para não
+                       trafegar as ~37 mil linhas do histórico inteiro.
+    TQB_Monitoramento → monitoramento de SLA por ordem (Xesper, Xreser,
+                       SLAVencimentoOS/CC) — existia no dataset `silver`
+                       mas não era consultada; ver kpis.py para o porquê.
 
 A autenticação usa Application Default Credentials do Google — a mesma
 camada que o conector do Power BI usa por baixo. Nada hardcoded.
@@ -70,4 +73,18 @@ def fetch_stj() -> list[dict]:
     """
     rows = _rows(sql)
     log.info("%s (abertas): %d linhas", config.BQ_VIEW_STJ, len(rows))
+    return rows
+
+
+def fetch_monitoramento() -> list[dict]:
+    """Monitoramento de SLA por ordem — só as ordens ainda abertas.
+    ordemSTJ casa com o `ordem` de STJ_Manutencao (join feito em kpis.py)."""
+    sql = f"""
+        SELECT ordemSTJ, Xesper, Xreser, SLAVencimentoOS, SLAVencimentoCC
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.TQB_Monitoramento`
+        WHERE termino = 'N'
+        LIMIT {config.BQ_MAX_ROWS}
+    """
+    rows = _rows(sql)
+    log.info("TQB_Monitoramento (abertas): %d linhas", len(rows))
     return rows

@@ -15,6 +15,12 @@ Fontes (schema REAL, validado com os CSVs de amostra de 10/07/2026):
       Colunas usadas: ORDEM, SOLICI, CODBEM, SERVICO, SITUACA,
       TERMINO, DTORIGI, DTMPINI, DTMPFIM, XRETORN.
 
+  silver.TQB_Monitoramento → monitoramento de SLA por ordem (join por
+      ordem/ordemSTJ com STJ_Manutencao). Colunas usadas: Xesper (cliente
+      esperando: 'S'/'N'/vazio — validado contra dado real em 20/07/2026),
+      Xreser (veículo reserva dado: 'S'/'N' — substitui xBemRes, que vem
+      sempre vazio na STJ_Manutencao), SLAVencimentoOS/SLAVencimentoCC.
+
 Regras de status validadas nos dados:
   · ordem ABERTA  = SITUACA/situacao ≠ 'C' (cancelada) e TERMINO/termino = 'N'
   · FORA DO PRAZO = aberta e agora > dtMpFim+horaMpFim  (o P.FIM MAN do protótipo)
@@ -26,11 +32,23 @@ Regras de status validadas nos dados:
 ║ · Não há coluna de PLACA nas views — o veículo é o codBem.           ║
 ║   O painel mostra "Bem NNNNN"; se existir um de-para bem→placa em    ║
 ║   outra tabela, dá para juntar aqui depois.                          ║
-║ · "S.S. aguardando", "Clientes esp.", "Reservas no limite" e         ║
-║   "Controle de qualidade" não têm coluna nas views — entram por      ║
-║   env (KPI_*_MANUAL) até existir fonte. Veja config.py.              ║
-║ · "Cláusula contratual" foi derivada como: fora do prazo E sem bem   ║
-║   reserva apontado (xBemRes vazio). AJUSTE se a regra real diferir.  ║
+║ · "Clientes esp." agora vem de TQB_Monitoramento.Xesper='S' —        ║
+║   validado 1:1 contra a operação real em 20/07/2026 (bateu 3).       ║
+║ · "S.S. aguardando", "Reservas no limite", "Controle de qualidade"   ║
+║   e o efetivo de mecânicos (trabalhando/disponível/pausa) NÃO têm    ║
+║   fonte automática confirmada — varri as ~50 views do dataset        ║
+║   `silver` e nenhuma bate com segurança. Seguem por env              ║
+║   (KPI_*_MANUAL / MECANICOS_*) até alguém do time de oficina indicar ║
+║   a tabela certa. Veja config.py.                                    ║
+║ · "Cláusula contratual" = fora do prazo E sem veículo reserva dado   ║
+║   (Xreser='N', de TQB_Monitoramento — substituiu xBemRes, que vem    ║
+║   sempre vazio na STJ_Manutencao). O critério de "fora do prazo" em  ║
+║   si (dtMpFim/horaMpFim) NÃO foi validado contra a operação real:    ║
+║   em 20/07/2026 a tela real mostrava 0 e esta regra calculou ~96 —   ║
+║   dtMpFim parece ser a janela de mão de obra, não o prazo do        ║
+║   cliente. TQB_Monitoramento.SLAVencimentoOS/CC também não bateram   ║
+║   ao recalcular ao vivo (~108). PRECISA de confirmação do time antes ║
+║   de confiar neste número no painel.                                 ║
 ╚══════════════════════════════════════════════════════════════════════╝
 """
 from __future__ import annotations
@@ -129,9 +147,23 @@ def _mobilizado(row: dict) -> bool:
            "NAO" not in _norm(row.get("descricaoMobilizacao"))
 
 
-def _sem_reserva(row: dict) -> bool:
-    """xBemRes vazio = nenhum bem reserva apontado para o veículo."""
+def _monitoramento_por_ordem(mon_rows: list[dict]) -> dict[str, dict]:
+    """Indexa TQB_Monitoramento por número de ordem para juntar com STJ_Manutencao."""
+    return {str(r["ordemSTJ"]).strip(): r for r in mon_rows if not _vazio(r.get("ordemSTJ"))}
+
+
+def _sem_reserva(row: dict, mon: dict | None) -> bool:
+    """Sem veículo reserva dado = Xreser='N' (TQB_Monitoramento).
+    Sem cruzamento, cai para xBemRes (STJ_Manutencao) — que na prática
+    vem sempre vazio, então isso é só um fallback defensivo."""
+    if mon is not None and not _vazio(mon.get("Xreser")):
+        return _norm(mon.get("Xreser")) == "N"
     return _vazio(row.get("xBemRes"))
+
+
+def _cliente_esperando(mon: dict | None) -> bool:
+    """Xesper='S' (TQB_Monitoramento) — validado contra a operação real."""
+    return mon is not None and _norm(mon.get("Xesper")) == "S"
 
 
 def _linha_detalhe(row: dict, situacao: str) -> dict:
@@ -204,19 +236,24 @@ def _retorno(stj_rows: list[dict]) -> int:
 # ============================ payload final ================================
 
 def build_payload(man_rows: list[dict], stj_rows: list[dict],
+                  mon_rows: list[dict] | None = None,
                   agora: datetime | None = None) -> dict:
     """
-    Recebe as linhas das DUAS views e devolve o JSON que o painel consome.
+    Recebe as linhas das TRÊS views e devolve o JSON que o painel consome.
     Este é o CONTRATO com o frontend — mudou uma chave aqui, mude também
     no Resumo_Oficina.dc.html.
     """
     agora = agora or datetime.now(TZ_BR)
+    mon_por_ordem = _monitoramento_por_ordem(mon_rows or [])
 
     abertas    = [r for r in man_rows if _aberta_man(r)]
     fora_prazo = [r for r in abertas
                   if (_prazo_fim(r) is not None and agora > _prazo_fim(r))]
     sos        = [r for r in abertas if _nome_servico(r) == "Socorro"]
-    clausula   = [r for r in fora_prazo if _sem_reserva(r)]  # AJUSTE se a regra real diferir
+    clausula   = [r for r in fora_prazo
+                  if _sem_reserva(r, mon_por_ordem.get(str(r.get("ordem") or "").strip()))]
+    clientes_esperando = [r for r in abertas
+                          if _cliente_esperando(mon_por_ordem.get(str(r.get("ordem") or "").strip()))]
 
     # --- Tipo de serviço (contagem nas ordens da oficina) -------------------
     contagem: dict[str, int] = {}
@@ -250,9 +287,9 @@ def build_payload(man_rows: list[dict], stj_rows: list[dict],
         "osAbertas":   _ordenar_por_abertura([_linha_detalhe(r, _st(r)) for r in abertas]),
         "sos":         [_linha_detalhe(r, "Crítico") for r in sos],
         "clausula":    [_linha_detalhe(r, "Crítico") for r in clausula],
-        # Sem fonte automática nas views atuais (valores via .env):
-        "ssAguardando": [], "clientesEsp": [], "reservaLimite": [],
-        "qualidade": [], "retorno": [],
+        "clientesEsp": [_linha_detalhe(r, "Aguardando") for r in clientes_esperando],
+        # Sem fonte automática confirmada ainda (valores via .env):
+        "ssAguardando": [], "reservaLimite": [], "qualidade": [], "retorno": [],
     }
 
     return {
@@ -263,7 +300,7 @@ def build_payload(man_rows: list[dict], stj_rows: list[dict],
             "osForaPrazo":   len(fora_prazo),
             "qualidade":     config.KPI_QUALIDADE_MANUAL,
             "retorno":       _retorno(stj_rows),
-            "clientesEsp":   config.KPI_CLIENTES_ESP_MANUAL,
+            "clientesEsp":   len(clientes_esperando),
             "clausula":      len(clausula),
             "reservaLimite": config.KPI_RESERVA_LIMITE_MANUAL,
             "sos":           len(sos),

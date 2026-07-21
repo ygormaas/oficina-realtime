@@ -43,7 +43,8 @@ async def _calcular_payload() -> dict:
         from . import bq as fonte  # import tardio (só carrega a lib do Google quando precisa)
     man = await asyncio.to_thread(fonte.fetch_manutencao)  # consultas fora do event loop
     stj = await asyncio.to_thread(fonte.fetch_stj)
-    return kpis.build_payload(man, stj)
+    mon = await asyncio.to_thread(fonte.fetch_monitoramento)
+    return kpis.build_payload(man, stj, mon)
 
 
 async def _broadcast(payload: dict) -> None:
