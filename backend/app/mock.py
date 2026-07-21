@@ -80,6 +80,9 @@ def build_mock_payload() -> dict:
             {"k": "Socorro", "n": 3},
         ],
         "aging": {"d0_2": j(34), "d3_7": j(52), "d8_30": 39, "d30p": 8},
+        "veiculos": {"mobilizados": j(56), "naoMobilizados": j(4, 1)},
+        "localizacao": {"interna": j(55), "externa": j(14)},
+        "tipoVeiculo": {"pesada": j(42), "leve": j(22)},
         "detalhes": {
             "osForaPrazo": fora,
             "osAbertas": abertas_amostra,

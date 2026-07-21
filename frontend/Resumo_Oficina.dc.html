@@ -44,29 +44,22 @@
       </div>
     </header>
 
-    <!-- Manchete-síntese: o "lead" da operação hoje -->
-    <div style="display:flex;align-items:center;gap:16px;flex:none;background:var(--maas-petroleo);border-radius:var(--radius-card-lg);padding:18px 28px;">
-      <span style="display:inline-flex;flex:none;">{{ icHead }}</span>
-      <span style="font-size:27px;font-weight:800;letter-spacing:-.6px;color:#fff;line-height:1.15;">{{ headline }}</span>
-      <span style="margin-left:auto;flex:none;font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--maas-verde);">{{ headStatus }}</span>
-    </div>
-
-    <!-- Trilho de alertas -->
-    <div style="display:flex;gap:14px;align-items:stretch;flex:none;min-height:66px;">
-      <div style="display:flex;flex-direction:column;justify-content:center;gap:2px;flex:none;padding-right:2px;">
-        <span style="font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--maas-petroleo-45);">Alertas</span>
-        <span style="font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--maas-petroleo-45);">ativos</span>
+    <!-- Barra única de alertas (contagem + chips + status) -->
+    <div style="display:flex;gap:10px;align-items:stretch;flex:none;min-height:58px;">
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:1px;flex:none;padding-right:2px;">
+        <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--maas-petroleo-45);">Alertas</span>
+        <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--maas-petroleo-45);">ativos</span>
       </div>
       <sc-if value="{{ hasAlerts }}" hint-placeholder-val="{{ true }}">
-        <span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:52px;font-size:34px;font-weight:800;letter-spacing:-1px;color:#B83A32;font-variant-numeric:tabular-nums;">{{ alertCount }}</span>
+        <span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;font-size:32px;font-weight:800;letter-spacing:-1px;color:#B83A32;font-variant-numeric:tabular-nums;">{{ alertCount }}</span>
         <span style="width:1px;background:var(--border-default);flex:none;margin:6px 0;"></span>
-        <sc-for list="{{ activeAlerts }}" as="a" hint-placeholder-count="5">
-          <span style="display:inline-flex;align-items:center;gap:12px;padding:0 18px 0 15px;border-radius:14px;background:{{ a.bg }};border:1.5px solid {{ a.bd }};white-space:nowrap;">
+        <sc-for list="{{ activeAlerts }}" as="a" hint-placeholder-count="7">
+          <span style="display:inline-flex;align-items:center;gap:9px;padding:0 12px 0 11px;border-radius:12px;background:{{ a.bg }};border:1.5px solid {{ a.bd }};white-space:nowrap;">
             <span style="display:inline-flex;flex:none;color:{{ a.fg }};">{{ a.iconEl }}</span>
-            <span style="font-size:30px;font-weight:800;letter-spacing:-1px;color:{{ a.fg }};font-variant-numeric:tabular-nums;line-height:1;">{{ a.valor }}</span>
+            <span style="font-size:25px;font-weight:800;letter-spacing:-.8px;color:{{ a.fg }};font-variant-numeric:tabular-nums;line-height:1;">{{ a.valor }}</span>
             <span style="display:flex;flex-direction:column;gap:1px;">
-              <span style="font-size:15px;font-weight:700;color:var(--maas-petroleo);line-height:1.1;">{{ a.label }}</span>
-              <span style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:{{ a.fg }};">{{ a.sev }}</span>
+              <span style="font-size:13px;font-weight:700;color:var(--maas-petroleo);line-height:1.1;">{{ a.label }}</span>
+              <span style="font-size:9.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:{{ a.fg }};">{{ a.sev }}</span>
             </span>
           </span>
         </sc-for>
@@ -144,23 +137,59 @@
       <!-- Linha 2 -->
       <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:18px;flex:1.18;min-height:0;">
 
-        <!-- 03 Tipo de serviço -->
+        <!-- 03 Veículos -->
         <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-card-lg);box-shadow:var(--shadow-card);padding:20px 26px 22px;display:flex;flex-direction:column;">
           <div style="display:flex;align-items:center;gap:11px;flex:none;">
             <span style="font-size:13px;font-weight:800;color:var(--maas-verde);font-variant-numeric:tabular-nums;">03</span>
             <span style="display:inline-flex;color:var(--maas-verde);">{{ icTipo }}</span>
-            <span style="font-size:20px;font-weight:800;letter-spacing:-.3px;color:var(--maas-petroleo);white-space:nowrap;">Tipo de serviço</span>
-            <span style="font-size:13px;font-weight:600;color:var(--maas-petroleo-45);white-space:nowrap;">Do que a oficina está cuidando</span>
-            <span style="flex:1;height:1px;background:var(--border-subtle);"></span>
+            <span style="font-size:20px;font-weight:800;letter-spacing:-.3px;color:var(--maas-petroleo);white-space:nowrap;">Veículos</span>
+            <span style="font-size:13px;font-weight:600;color:var(--maas-petroleo-45);white-space:nowrap;">Situação atual da frota</span>
+            <span style="flex:1;"></span>
+            <span onClick="{{ openVeic }}" role="button" tabindex="0" title="Ver veículos em atendimento" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;white-space:nowrap;" style-hover="opacity:.7;">
+              <span style="font-size:13px;font-weight:700;color:var(--maas-petroleo-45);">Total <b style="font-size:16px;font-weight:800;color:var(--maas-petroleo);font-variant-numeric:tabular-nums;">{{ veicTotal }}</b></span>
+              <span style="display:inline-flex;">{{ icVeicDrill }}</span>
+            </span>
           </div>
-          <div style="display:flex;flex-direction:column;justify-content:space-between;gap:14px;flex:1;min-height:0;padding:10px 0;">
-            <sc-for list="{{ tipoRows }}" as="t" hint-placeholder-count="5">
-              <div style="display:flex;align-items:center;gap:16px;">
-                <span style="width:140px;font-size:16px;font-weight:600;color:var(--maas-petroleo);">{{ t.k }}</span>
-                <span style="flex:1;height:24px;background:var(--surface-sunken);border-radius:5px;overflow:hidden;"><span style="display:block;height:100%;width:{{ t.pct }};background:{{ t.color }};"></span></span>
-                <span style="width:52px;text-align:right;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--maas-petroleo);letter-spacing:-.5px;">{{ t.n }}</span>
+          <div style="display:flex;flex-direction:column;flex:1;min-height:0;gap:16px;padding-top:14px;">
+            <!-- Tiles principais: situação da frota (grade 2×2) -->
+            <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:13px;min-height:0;">
+              <sc-for list="{{ veicTiles }}" as="f" hint-placeholder-count="4">
+                <div style="background:{{ f.bg }};border:1px solid {{ f.border }};border-radius:14px;padding:14px 18px;display:flex;flex-direction:column;justify-content:center;gap:9px;min-height:0;">
+                  <div style="display:flex;align-items:center;gap:12px;">
+                    <span style="width:38px;height:38px;border-radius:11px;background:{{ f.badge }};display:inline-flex;align-items:center;justify-content:center;flex:none;">{{ f.iconEl }}</span>
+                    <span style="font-size:40px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-1px;color:{{ f.num }};line-height:1;">{{ f.valor }}</span>
+                  </div>
+                  <span style="font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--maas-petroleo-45);">{{ f.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <!-- Rodapé: composição dos serviços + tipo de veículo -->
+            <div style="flex:none;border-top:1px solid var(--border-subtle);padding-top:14px;display:grid;grid-template-columns:1.75fr 1fr;gap:24px;">
+              <div>
+                <div style="font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--maas-petroleo-45);margin-bottom:10px;">Composição dos serviços</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 22px;">
+                  <sc-for list="{{ tipoRows }}" as="t" hint-placeholder-count="5">
+                    <div style="display:flex;align-items:center;gap:9px;">
+                      <span style="width:9px;height:9px;border-radius:50%;background:{{ t.color }};flex:none;"></span>
+                      <span style="flex:1;font-size:14px;font-weight:600;color:var(--maas-petroleo);">{{ t.k }}</span>
+                      <span style="font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--maas-petroleo);">{{ t.n }}</span>
+                    </div>
+                  </sc-for>
+                </div>
               </div>
-            </sc-for>
+              <div style="border-left:1px solid var(--border-subtle);padding-left:22px;">
+                <div style="font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--maas-petroleo-45);margin-bottom:10px;">Tipo de veículo</div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <sc-for list="{{ tipoVeicRows }}" as="v" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <span style="display:inline-flex;flex:none;">{{ v.iconEl }}</span>
+                      <span style="flex:1;font-size:14px;font-weight:600;color:var(--maas-petroleo);">{{ v.k }}</span>
+                      <span style="font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--maas-petroleo);">{{ v.n }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -288,7 +317,7 @@
             </div>
           </sc-if>
           <sc-if value="{{ hasDetailRows }}" hint-placeholder-val="{{ true }}">
-            <div style="display:grid;grid-template-columns:110px 100px 100px 120px minmax(150px,1fr) 132px;min-width:0;padding:14px 28px;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
+            <div style="display:grid;grid-template-columns:140px 86px 86px minmax(240px,1fr) 122px 126px;min-width:0;padding:14px 28px;border-left:4px solid transparent;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Abertura</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Solic.</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Ordem</span>
@@ -297,11 +326,14 @@
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);text-align:right;">Situação</span>
             </div>
             <sc-for list="{{ detailRows }}" as="r" hint-placeholder-count="6">
-              <div style="display:grid;grid-template-columns:110px 100px 100px 120px minmax(150px,1fr) 132px;min-width:0;padding:15px 28px;border-bottom:1px solid var(--border-subtle);align-items:center;font-variant-numeric:tabular-nums;" style-hover="background:var(--surface-sunken);">
+              <div style="display:grid;grid-template-columns:140px 86px 86px minmax(240px,1fr) 122px 126px;min-width:0;padding:15px 28px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.ssBar }};align-items:center;font-variant-numeric:tabular-nums;" style-hover="background:var(--surface-sunken);">
                 <span style="font-size:14px;color:var(--maas-petroleo-60);">{{ r.abertura }}</span>
-                <span style="font-size:14px;color:var(--maas-petroleo-60);">{{ r.ss }}</span>
+                <span style="font-size:14px;font-weight:{{ r.ssWeight }};color:{{ r.ssFg }};">{{ r.ss }}</span>
                 <span style="font-size:14px;font-weight:700;color:var(--maas-petroleo);">{{ r.os }}</span>
-                <span style="font-size:14px;font-weight:800;color:var(--maas-petroleo);letter-spacing:-.2px;">{{ r.placa }}</span>
+                <span style="display:flex;flex-direction:column;min-width:0;">
+                  <span style="font-size:14px;font-weight:800;color:var(--maas-petroleo);letter-spacing:-.2px;">{{ r.placa }}</span>
+                  <sc-if value="{{ r.nome }}"><span style="font-size:11px;color:var(--maas-petroleo-45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.nome }}</span></sc-if>
+                </span>
                 <span style="font-size:14px;color:var(--maas-petroleo);">{{ r.serv }}</span>
                 <span style="text-align:right;"><span style="display:inline-block;padding:5px 13px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:700;color:{{ r.stStyle.fg }};background:{{ r.stStyle.bg }};border:1.5px solid {{ r.stStyle.bd }};white-space:nowrap;">{{ r.st }}</span></span>
               </div>
@@ -400,6 +432,10 @@ class Component extends DCLogic {
       maximize: [p('M8 3H5a2 2 0 0 0-2 2v3'), p('M21 8V5a2 2 0 0 0-2-2h-3'), p('M3 16v3a2 2 0 0 0 2 2h3'), p('M16 21h3a2 2 0 0 0 2-2v-3')],
       x: [p('M18 6 6 18'), p('M6 6l12 12')],
       search: [c(11,11,8), p('m21 21-4.3-4.3')],
+      ban: [c(12,12,10), ln(4.9,4.9,19.1,19.1)],
+      home: [p('m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'), p('M9 22V12h6v10')],
+      mapPin: [p('M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z'), c(12,10,3)],
+      truck: [p('M14 18V6a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h1'), p('M14 9h4l4 4v4a1 1 0 0 1-1 1h-1'), c(7,18,2), c(17,18,2)],
     };
     return R.createElement('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color, strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', style: { display: 'block', flex: 'none' } }, ...(M[name] || []));
   }
@@ -484,11 +520,27 @@ class Component extends DCLogic {
       .sort((a,b) => (a.status==='crit'?0:1) - (b.status==='crit'?0:1))
       .map(d => ({ label:d.label, valor:d.valor, sev:d.status==='crit'?'Crítico':'Atenção', iconEl:this.ic(d.status==='crit'?'alertTriangle':'alarm', 22), ...railStyle[d.status] }));
 
-    // 03 Tipo de serviço
+    // 03 Veículos — situação da frota (destaque) + composição dos serviços
     const tipoRaw = D.tipoServico || [];
-    const maxTipo = Math.max(1, ...tipoRaw.map(t=>t.n));
     const tipoColor = { 'Sinistro':'var(--maas-laranja)', 'Socorro':'#D9534F', 'Corretiva':'var(--maas-laranja)' };
-    const tipoRows = tipoRaw.map(t => ({ k:t.k, n:t.n, pct:Math.max(t.n/maxTipo*100,2)+'%', color:tipoColor[t.k] || 'var(--maas-verde)' }));
+    const tipoRows = tipoRaw.map(t => ({ k:t.k, n:t.n, color:tipoColor[t.k] || 'var(--maas-verde)' }));
+    const Veic = D.veiculos || { mobilizados:0, naoMobilizados:0 };
+    const Loc  = D.localizacao || { interna:0, externa:0 };
+    const veicTotal = (Veic.mobilizados||0) + (Veic.naoMobilizados||0);
+    const openVeic = () => this.setState({ detailId: 'veiculos' });
+    const icVeicDrill = this.ic('maximize', 18, 'var(--maas-petroleo-25)');
+    const TV = D.tipoVeiculo || { pesada:0, leve:0 };
+    const tipoVeicRows = [
+      { k:'Pesada', n:TV.pesada, iconEl:this.ic('truck',19,'var(--maas-petroleo)') },
+      { k:'Leve',   n:TV.leve,   iconEl:this.ic('car',19,'var(--maas-verde)') },
+    ];
+    const mix = (v,p) => `color-mix(in srgb, ${v} ${p}, var(--surface-card))`;
+    const veicTiles = [
+      { valor:Veic.mobilizados,    label:'Mobilizados',     iconEl:this.ic('car',20,'#fff'),    num:'var(--maas-verde)',   bg:mix('var(--maas-verde)','12%'),   badge:'var(--maas-verde)',        border:'color-mix(in srgb, var(--maas-verde) 30%, transparent)' },
+      { valor:Veic.naoMobilizados, label:'Não mobilizados', iconEl:this.ic('ban',20,'#fff'),    num:'var(--maas-laranja)', bg:mix('var(--maas-laranja)','12%'), badge:'var(--maas-laranja)',      border:'color-mix(in srgb, var(--maas-laranja) 30%, transparent)' },
+      { valor:Loc.interna,         label:'Oficina interna', iconEl:this.ic('home',20,'#fff'),   num:'var(--maas-petroleo)',bg:'rgba(24,59,72,.04)',             badge:'var(--maas-petroleo)',     border:'var(--border-subtle)' },
+      { valor:Loc.externa,         label:'Oficina externa', iconEl:this.ic('mapPin',20,'#fff'), num:'var(--maas-petroleo)',bg:'rgba(24,59,72,.04)',             badge:'var(--maas-petroleo-45)',  border:'var(--border-subtle)' },
+    ];
 
     // 04 Análises — aging, preventivas, capacidade, prioridades
     const A = D.aging;
@@ -533,16 +585,11 @@ class Component extends DCLogic {
       .map(o => {
         const s = sla(o.st);
         return { dias:o.dias, ageColor: o.dias>30 ? '#B83A32' : 'var(--maas-petroleo)',
-          placaMain: (o.placa && o.placa!=='—') ? o.placa : ('O.S. '+o.os),
+          placaMain: 'O.S. ' + o.os,
           osla:o.st, oslaFg:s.fg, oslaBg:s.bg, oslaBd:s.bd };
       });
 
-    // Manchete-síntese dinâmica
-    const partes = [];
-    if (K.osForaPrazo > 0)   partes.push(K.osForaPrazo + ' O.S. fora do prazo');
-    if (K.prevAtrasadas > 0) partes.push(K.prevAtrasadas + ' preventivas atrasadas');
-    if (K.sos > 0)           partes.push(K.sos + ' S.O.S em atendimento');
-    partes.push(ratio.replace('.', ',') + ' O.S. por mecânico');
+    // Status geral (mostrado na barra única de alertas)
     const temCrit = activeAlerts.some(a => a.sev === 'Crítico');
 
     return {
@@ -550,16 +597,15 @@ class Component extends DCLogic {
       clock: this.state.clock,
       loading: !this.state.data,
       connLabel: conn.label, connColor: conn.color, connAnim: conn.anim,
-      headline: partes.join(' · '),
       headStatus: temCrit ? 'Atenção · priorizar' : 'Operação normal',
-      icHead: this.ic('alertTriangle',30,'var(--maas-verde)'),
-      blocoOS, blocoClientes, tipoRows, agingRows, agingTotal, prevRows, cap, priorityRows,
+      headStatusColor: temCrit ? 'var(--maas-laranja-escuro)' : 'var(--maas-verde-escuro-2)',
+      blocoOS, blocoClientes, tipoRows, tipoVeicRows, veicTiles, veicTotal, openVeic, icVeicDrill, agingRows, agingTotal, prevRows, cap, priorityRows,
       activeAlerts, hasAlerts: activeAlerts.length > 0, noAlerts: activeAlerts.length === 0, alertCount: activeAlerts.length,
       ...this.buildDetail(),
       icClock:    this.ic('clock',28,'var(--maas-verde)'),
       icOS:       this.ic('clipboard',22,'var(--maas-verde)'),
       icClientes: this.ic('users',22,'var(--maas-verde)'),
-      icTipo:     this.ic('layers',22,'var(--maas-verde)'),
+      icTipo:     this.ic('truck',22,'var(--maas-verde)'),
       icKpi:      this.ic('activity',22,'var(--maas-verde)'),
     };
   }
@@ -569,13 +615,14 @@ class Component extends DCLogic {
     return {
       ssAguardando:  { title:'S.S. aguardando',              icon:'inbox',      sub:(n)=> n + ' solicitações ainda sem ordem de serviço' },
       osAbertas:     { title:'Total O.S. abertas',           icon:'clipboard',  sub:(n)=> 'Amostra das ' + n + ' ordens mais recentes com status aberto' },
-      osForaPrazo:   { title:'O.S. fora do prazo',           icon:'alarm',      sub:(n)=> n + ' ordens fora do prazo por P.FIM MAN · recalculado a cada 5 min' },
+      osForaPrazo:   { title:'O.S. fora do prazo',           icon:'alarm',      sub:(n)=> n + ' ordens abertas com o SLA da O.S. estourado' },
       qualidade:     { title:'Controle de qualidade',        icon:'badgeCheck', sub:(n)=> n + ' O.S. enviada(s) pela manutenção para o controle de qualidade' },
       retorno:       { title:'Retorno',                      icon:'rotate',     sub:()=> 'Indicador manual — sem fonte automática por enquanto' },
       clientesEsp:   { title:'Clientes esp. / serv. rápido', icon:'zap',        sub:(n)=> n ? n + ' clientes aguardando' : 'Nenhum cliente aguardando no momento' },
-      clausula:      { title:'Cláusula contratual',          icon:'fileText',   sub:(n)=> n + ' veículos com contrato, fora do prazo, sem reserva apontada' },
+      clausula:      { title:'Cláusula contratual',          icon:'fileText',   sub:(n)=> n + ' veículos em contrato com o SLA da cláusula estourado (exceto implementação)' },
       reservaLimite: { title:'Reservas no limite',           icon:'car',        sub:(n)=> n ? n + ' contratos no limite' : 'Nenhum contrato no limite de reservas' },
       sos:           { title:'S.O.S',                        icon:'lifebuoy',   sub:(n)=> n + ' chamados de socorro em atendimento' },
+      veiculos:      { title:'Veículos em atendimento',      icon:'truck',      sub:(n)=> n + ' veículos na oficina — placa, modelo, O.S., S.S. e serviço' },
     };
   }
 
@@ -591,7 +638,24 @@ class Component extends DCLogic {
       return { fg:'var(--maas-petroleo-60)', bg:'var(--surface-sunken)', bd:'transparent' };
     };
     const raw = (this.state.data && this.state.data.detalhes && this.state.data.detalhes[id]) || [];
-    const rows = raw.map(r => ({ ...r, stStyle: chip(r.st) }));
+    // Agrupa O.S. da mesma S.S.: deixa as linhas adjacentes e marca com uma
+    // barra colorida à esquerda (uma cor por S.S. com mais de uma O.S.).
+    const ssCount = {}, firstSeen = {};
+    raw.forEach((r, i) => { ssCount[r.ss] = (ssCount[r.ss] || 0) + 1; if (!(r.ss in firstSeen)) firstSeen[r.ss] = i; });
+    const palette = ['#2B9E66', '#E0912A', '#3E7C8C', '#8A5FB0', '#C2554E', '#4F8F5A', '#B8873A'];
+    const ssColor = {}; let ci = 0;
+    Object.keys(firstSeen).sort((a, b) => firstSeen[a] - firstSeen[b]).forEach(ss => {
+      if (ssCount[ss] > 1) { ssColor[ss] = palette[ci % palette.length]; ci++; }
+    });
+    const rows = raw.slice()
+      .sort((a, b) => (firstSeen[a.ss] - firstSeen[b.ss]))   // mesma S.S. lado a lado
+      .map(r => {
+        const g = ssCount[r.ss] > 1;
+        return { ...r, stStyle: chip(r.st), ssGrouped: g,
+                 ssBar: g ? ssColor[r.ss] : 'transparent',
+                 ssFg: g ? ssColor[r.ss] : 'var(--maas-petroleo-60)',
+                 ssWeight: g ? '800' : '400' };
+      });
     return {
       detailOpen: true,
       detailTitle: meta.title,

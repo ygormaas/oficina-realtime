@@ -49,10 +49,13 @@ def _rows(sql: str) -> list[dict]:
 
 
 def fetch_manutencao() -> list[dict]:
-    """Ordens em manutenção (a oficina agora) — a view já vem filtrada."""
+    """Ordens em manutenção (a oficina agora) — a view já vem filtrada.
+
+    `qtdRep` é o filtro-mestre de "O.S. aberta" do painel (=0), e
+    `tipoRet`/`xRetorn` alimentam Controle de Qualidade e Retorno (ver kpis.py)."""
     sql = f"""
         SELECT ordem, solici, dtOrigem, servico, NomeServico, codBem,
-               situacao, termino, dtMpFim, horaMpFim,
+               situacao, termino, dtMpFim, horaMpFim, qtdRep, tipoRet, xRetorn,
                descricaoMobilizacao, xBemRes, localizacao_veiculo
         FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.{config.BQ_VIEW_MANUTENCAO}`
         LIMIT {config.BQ_MAX_ROWS}
@@ -78,13 +81,88 @@ def fetch_stj() -> list[dict]:
 
 def fetch_monitoramento() -> list[dict]:
     """Monitoramento de SLA por ordem — só as ordens ainda abertas.
-    ordemSTJ casa com o `ordem` de STJ_Manutencao (join feito em kpis.py)."""
+    ordemSTJ casa com o `ordem` de STJ_Manutencao (join feito em kpis.py).
+
+    Traz os campos das regras de SLA/cláusula/aguardando (SLAUltrapassadoOS/CC,
+    StatusOS, nmServ, Xcontr, xss, key_filial_solici) — ver kpis.py."""
     sql = f"""
-        SELECT ordemSTJ, Xesper, Xreser, SLAVencimentoOS, SLAVencimentoCC
+        SELECT ordemSTJ, Ordem, Solici, Codbem, DataHoraAbertura, key_filial_solici,
+               Xesper, Xreser, SLAVencimentoOS, SLAVencimentoCC,
+               SLAUltrapassadoCC, SLAUltrapassadoOS, StatusOS, StatusMobilizacao,
+               nmServ, Xcontr, xss
         FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.TQB_Monitoramento`
         WHERE termino = 'N'
         LIMIT {config.BQ_MAX_ROWS}
     """
     rows = _rows(sql)
     log.info("TQB_Monitoramento (abertas): %d linhas", len(rows))
+    return rows
+
+
+def fetch_cadastro_bem() -> list[dict]:
+    """Cadastro de bens (ST9_CadastroBem) — dá o contrato e o status do bem
+    de cada veículo. A CLÁUSULA CONTRATUAL usa numeroContrato/statusBem daqui
+    (join TQB_Monitoramento.Codbem = ST9_CadastroBem.bem). Ver kpis.py."""
+    sql = f"""
+        SELECT bem, numeroContrato, statusBem, tecnologia, placa, nome
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.ST9_CadastroBem`
+        LIMIT {config.BQ_MAX_ROWS}
+    """
+    rows = _rows(sql)
+    log.info("ST9_CadastroBem: %d linhas", len(rows))
+    return rows
+
+
+def fetch_mecanicos() -> list[dict]:
+    """Efetivo de mecânicos (SRA_SRJ_Funcionarios) — StatusFinal em
+    Disponível / Trabalhando / Intervalo (bloco Mão de Obra). Ver kpis.py."""
+    sql = f"""
+        SELECT RA_MAT, StatusFinal
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.SRA_SRJ_Funcionarios`
+        LIMIT {config.BQ_MAX_ROWS}
+    """
+    rows = _rows(sql)
+    log.info("SRA_SRJ_Funcionarios: %d linhas", len(rows))
+    return rows
+
+
+def fetch_preventivas() -> list[dict]:
+    """Status das preventivas por bem (STF_Status_Manutencao) — o bloco
+    Preventivas conta bens distintos por statusManutencao (Atrasado /
+    Período Final / Período Inicial). Ver kpis.py."""
+    sql = f"""
+        SELECT codBem, statusManutencao
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.STF_Status_Manutencao`
+        LIMIT {config.BQ_MAX_ROWS}
+    """
+    rows = _rows(sql)
+    log.info("STF_Status_Manutencao: %d linhas", len(rows))
+    return rows
+
+
+def fetch_reservas_portaria() -> list[dict]:
+    """Movimentos de portaria (TTI_Portaria) — base do KPI "Reservas no
+    Limite" (medida Qtd_Res_Limite). Join codVei = ST9_CadastroBem.bem.
+    Ver kpis.py."""
+    sql = f"""
+        SELECT numeroContrato, reserva, statusBem, ordem, tecnologia, codVei, dtSai
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.TTI_Portaria`
+        LIMIT {config.BQ_MAX_ROWS}
+    """
+    rows = _rows(sql)
+    log.info("TTI_Portaria: %d linhas", len(rows))
+    return rows
+
+
+def fetch_tqr() -> list[dict]:
+    """Catálogo de modelos (TQR) — dá a categoria do veículo (Pesada/Leve)
+    por tecnologia. Join ST9_CadastroBem.tecnologia = TQR.TQR_TIPMOD.
+    Ver kpis.py (_tipo_veiculo)."""
+    sql = f"""
+        SELECT TQR_TIPMOD, TQR_CATBEM, TQR_DESMOD
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.TQR`
+        LIMIT {config.BQ_MAX_ROWS}
+    """
+    rows = _rows(sql)
+    log.info("TQR: %d linhas", len(rows))
     return rows

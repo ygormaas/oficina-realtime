@@ -32,8 +32,32 @@ def fetch_stj() -> list[dict]:
 def fetch_monitoramento() -> list[dict]:
     """Sem export local de TQB_Monitoramento ainda — modo csv segue sem
     esse cruzamento (clientesEsp/clausula caem para 0 até existir o CSV)."""
-    caminho = config.CSV_DIR / "TQB_Monitoramento.csv"
-    if not caminho.exists():
-        log.info("TQB_Monitoramento.csv não encontrado — pulando cruzamento de SLA")
+    return _opcional("TQB_Monitoramento.csv", "cruzamento de SLA")
+
+
+def _opcional(nome: str, para_que: str) -> list[dict]:
+    """Lê um CSV se existir; senão devolve [] (kpis.py degrada o KPI)."""
+    if not (config.CSV_DIR / nome).exists():
+        log.info("%s não encontrado — pulando %s", nome, para_que)
         return []
-    return _read("TQB_Monitoramento.csv")
+    return _read(nome)
+
+
+def fetch_cadastro_bem() -> list[dict]:
+    return _opcional("ST9_CadastroBem.csv", "cláusula/veículos")
+
+
+def fetch_mecanicos() -> list[dict]:
+    return _opcional("SRA_SRJ_Funcionarios.csv", "efetivo de mecânicos")
+
+
+def fetch_preventivas() -> list[dict]:
+    return _opcional("STF_Status_Manutencao.csv", "preventivas")
+
+
+def fetch_reservas_portaria() -> list[dict]:
+    return _opcional("TTI_Portaria.csv", "reservas no limite")
+
+
+def fetch_tqr() -> list[dict]:
+    return _opcional("TQR.csv", "tipo de veículo (Pesada/Leve)")

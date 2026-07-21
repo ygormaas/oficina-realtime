@@ -41,10 +41,17 @@ async def _calcular_payload() -> dict:
         from . import csv_source as fonte
     else:
         from . import bq as fonte  # import tardio (só carrega a lib do Google quando precisa)
-    man = await asyncio.to_thread(fonte.fetch_manutencao)  # consultas fora do event loop
-    stj = await asyncio.to_thread(fonte.fetch_stj)
-    mon = await asyncio.to_thread(fonte.fetch_monitoramento)
-    return kpis.build_payload(man, stj, mon)
+    # consultas fora do event loop (as regras seguem as medidas DAX do manutest)
+    man  = await asyncio.to_thread(fonte.fetch_manutencao)
+    mon  = await asyncio.to_thread(fonte.fetch_monitoramento)
+    bem  = await asyncio.to_thread(fonte.fetch_cadastro_bem)
+    mec  = await asyncio.to_thread(fonte.fetch_mecanicos)
+    prev = await asyncio.to_thread(fonte.fetch_preventivas)
+    tti  = await asyncio.to_thread(fonte.fetch_reservas_portaria)
+    tqr  = await asyncio.to_thread(fonte.fetch_tqr)
+    return kpis.build_payload(man, mon_rows=mon, bem_rows=bem,
+                              mecanicos_rows=mec, prev_rows=prev,
+                              tti_rows=tti, tqr_rows=tqr)
 
 
 async def _broadcast(payload: dict) -> None:
