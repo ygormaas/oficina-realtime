@@ -43,6 +43,13 @@ def _opcional(nome: str, para_que: str) -> list[dict]:
     return _read(nome)
 
 
+def fetch_ss_aguardando() -> list[dict]:
+    """S.S. aguardando: no CSV a tabela vem inteira, então o filtro do StatusOS
+    (que no BigQuery está no WHERE) é aplicado aqui."""
+    rows = _opcional("TQB_Monitoramento.csv", "S.S. aguardando")
+    return [r for r in rows if "ABERTA" not in str(r.get("StatusOS") or "").upper()]
+
+
 def fetch_cadastro_bem() -> list[dict]:
     return _opcional("ST9_CadastroBem.csv", "cláusula/veículos")
 

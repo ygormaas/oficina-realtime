@@ -59,7 +59,17 @@ Fontes alternáveis por `DATA_SOURCE` no `backend/.env`:
 
 - **OS Abertas** = COUNT ordem, `qtdRep=0`.
 - **OS Fora do Prazo** = `agora > SLAVencimentoOS` (recalculado AO VIVO a cada ciclo,
-  não usa o flag snapshot `SLAUltrapassadoOS`) + ordemSTJ<>"" + qtdRep=0.
+  não usa o flag snapshot `SLAUltrapassadoOS`) + ordemSTJ<>"" + qtdRep=0
+  **+ serviço ∉ {Sinistro, Implementação}**. Esses dois não têm obrigação de prazo
+  (definido pela operação em 22/07/2026) e aparecem como "Sem prazo" no
+  detalhamento — ver `SERVICOS_SEM_SLA` em `kpis.py`. **Desvia de propósito do
+  DAX do manutest**, que contava todos os serviços: no ciclo em que a regra
+  entrou, o card caiu de 49 para 14.
+- O serviço de uma ordem vem do **STJ** (`NomeServico`/`servico`), não do
+  `nmServ` da TQB: em ~3 ordens abertas as fontes divergem e só o STJ tem o
+  código do serviço. Usar a mesma fonte na coluna "Tipo" e na regra de SLA
+  evita a linha exibir um serviço e ser classificada por outro
+  (ver `_servico_da_ordem`).
 - **Cláusula** = DISTINCTCOUNT `codBem`: `agora > SLAVencimentoCC` (AO VIVO),
   `xss=''`, `nmServ≠Implementacao`, ST9 `numeroContrato<>''` e `statusBem ∉ {08,02}`, qtdRep=0.
 - **Controle de Qualidade** = COUNT ordem, `tipoRet='A'`.

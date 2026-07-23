@@ -49,9 +49,10 @@ async def _calcular_payload() -> dict:
     prev = await asyncio.to_thread(fonte.fetch_preventivas)
     tti  = await asyncio.to_thread(fonte.fetch_reservas_portaria)
     tqr  = await asyncio.to_thread(fonte.fetch_tqr)
+    ss   = await asyncio.to_thread(fonte.fetch_ss_aguardando)
     return kpis.build_payload(man, mon_rows=mon, bem_rows=bem,
                               mecanicos_rows=mec, prev_rows=prev,
-                              tti_rows=tti, tqr_rows=tqr)
+                              tti_rows=tti, tqr_rows=tqr, ss_rows=ss)
 
 
 async def _broadcast(payload: dict) -> None:

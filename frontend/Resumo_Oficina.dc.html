@@ -17,9 +17,30 @@
   <link rel="stylesheet" href="_ds/maas-design-system-187213db-289f-4ada-afde-47607103acd5/tokens/base.css">
   <link rel="stylesheet" href="_ds/maas-design-system-187213db-289f-4ada-afde-47607103acd5/styles.css">
   <script src="_ds/maas-design-system-187213db-289f-4ada-afde-47607103acd5/_ds_bundle.js"></script>
+  <!-- Tipografia Milkinside: Space Grotesk (display), Inter (apoio), JetBrains Mono (códigos).
+       Vem do Google Fonts — sem internet o painel cai nos fallbacks locais e segue legível. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
   <style>
+    :root{
+      --font-sans:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+      --font-display:'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif;
+      --font-mono:'JetBrains Mono','Cascadia Mono','Consolas',ui-monospace,monospace;
+    }
     html,body{margin:0;height:100%;background:var(--maas-petroleo);overflow:hidden;font-family:var(--font-sans);}
     a{color:var(--maas-verde-escuro);text-decoration:none;}
+
+    /* Papéis tipográficos. O markup é todo inline, então em vez de marcar
+       dezenas de elementos um a um os seletores abaixo aproveitam padrões que
+       já existem: número tabular ou tracking negativo = tipo de display.
+       Space Grotesk vai só até 700 — os font-weight:800/900 caem para 700. */
+    [style*="tabular-nums"],[style*="letter-spacing:-"]{font-family:var(--font-display);}
+    /* Códigos e identificadores: S.S., O.S., placas. */
+    .mono{font-family:var(--font-mono);letter-spacing:0;}
+    /* Volta ao texto de apoio dentro de um contêiner marcado como display. */
+    .sans{font-family:var(--font-sans);}
+
     @keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.35}}
     @media (prefers-reduced-motion: reduce){*{animation:none!important}}
   </style>
@@ -29,16 +50,16 @@
 
     <!-- Header -->
     <header style="display:flex;align-items:center;gap:22px;flex:none;">
-      <span style="font-size:44px;font-weight:900;letter-spacing:-2px;color:var(--maas-petroleo);line-height:1;">maas<span style="color:var(--maas-verde);">.</span></span>
+      <img src="logo-maas.png" alt="MAAS" style="height:42px;width:auto;display:block;flex:none;">
       <span style="width:1px;height:44px;background:var(--border-default);"></span>
       <div style="display:flex;flex-direction:column;gap:4px;">
         <span style="font-size:14px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--maas-petroleo-45);">Central de Inteligência</span>
         <span style="font-size:31px;font-weight:800;letter-spacing:-.6px;color:var(--maas-petroleo);line-height:1;white-space:nowrap;">Resumo — Oficina</span>
       </div>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
-        <span style="display:inline-flex;color:var(--maas-verde);">{{ icClock }}</span>
+      <div style="margin-left:auto;display:flex;align-items:flex-start;gap:12px;">
+        <span style="display:inline-flex;color:var(--maas-verde);margin-top:2px;">{{ icClock }}</span>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
-          <span style="font-size:34px;font-weight:800;letter-spacing:-1px;color:var(--maas-petroleo);font-variant-numeric:tabular-nums;line-height:1;">{{ clock }}</span>
+          <span class="mono" style="font-size:32px;font-weight:700;letter-spacing:-1px;color:var(--maas-petroleo);font-variant-numeric:tabular-nums;line-height:1;">{{ clock }}</span>
           <span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--maas-petroleo-45);letter-spacing:.3px;"><span style="width:9px;height:9px;border-radius:50%;background:{{ connColor }};animation:{{ connAnim }};"></span>{{ connLabel }}</span>
         </div>
       </div>
@@ -47,25 +68,25 @@
     <!-- Barra única de alertas (contagem + chips + status) -->
     <div style="display:flex;gap:10px;align-items:stretch;flex:none;min-height:58px;">
       <div style="display:flex;flex-direction:column;justify-content:center;gap:1px;flex:none;padding-right:2px;">
-        <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--maas-petroleo-45);">Alertas</span>
-        <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--maas-petroleo-45);">ativos</span>
+        <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--maas-petroleo-45);">S.S.</span>
+        <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--maas-petroleo-45);">aguardando</span>
       </div>
       <sc-if value="{{ hasAlerts }}" hint-placeholder-val="{{ true }}">
-        <span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;font-size:32px;font-weight:800;letter-spacing:-1px;color:#B83A32;font-variant-numeric:tabular-nums;">{{ alertCount }}</span>
+        <span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;font-size:32px;font-weight:800;letter-spacing:-1px;color:var(--maas-laranja-escuro);font-variant-numeric:tabular-nums;">{{ alertCount }}</span>
         <span style="width:1px;background:var(--border-default);flex:none;margin:6px 0;"></span>
         <sc-for list="{{ activeAlerts }}" as="a" hint-placeholder-count="7">
           <span style="display:inline-flex;align-items:center;gap:9px;padding:0 12px 0 11px;border-radius:12px;background:{{ a.bg }};border:1.5px solid {{ a.bd }};white-space:nowrap;">
             <span style="display:inline-flex;flex:none;color:{{ a.fg }};">{{ a.iconEl }}</span>
-            <span style="font-size:25px;font-weight:800;letter-spacing:-.8px;color:{{ a.fg }};font-variant-numeric:tabular-nums;line-height:1;">{{ a.valor }}</span>
+            <span class="mono" style="font-size:21px;font-weight:700;letter-spacing:-.5px;color:{{ a.fg }};font-variant-numeric:tabular-nums;line-height:1;">{{ a.valor }}</span>
             <span style="display:flex;flex-direction:column;gap:1px;">
-              <span style="font-size:13px;font-weight:700;color:var(--maas-petroleo);line-height:1.1;">{{ a.label }}</span>
+              <span class="mono" style="font-size:12.5px;font-weight:700;color:var(--maas-petroleo);line-height:1.1;">{{ a.label }}</span>
               <span style="font-size:9.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:{{ a.fg }};">{{ a.sev }}</span>
             </span>
           </span>
         </sc-for>
       </sc-if>
       <sc-if value="{{ noAlerts }}">
-        <span style="display:inline-flex;align-items:center;gap:10px;font-size:19px;font-weight:700;color:var(--maas-verde-escuro-2);"><span style="width:11px;height:11px;border-radius:50%;background:currentColor;"></span>Operação sem alertas ativos</span>
+        <span style="display:inline-flex;align-items:center;gap:10px;font-size:19px;font-weight:700;color:var(--maas-verde-escuro-2);"><span style="width:11px;height:11px;border-radius:50%;background:currentColor;"></span>Nenhuma S.S. aguardando abertura</span>
       </sc-if>
     </div>
 
@@ -88,17 +109,21 @@
             <sc-for list="{{ blocoOS }}" as="item" hint-placeholder-count="5">
               <sc-if value="{{ item.sep }}"><span style="width:1px;background:var(--border-subtle);margin:14px 0;"></span></sc-if>
               <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:12px 18px;background:{{ item.bg }};border-radius:12px;margin:2px;">
-                <div style="display:flex;align-items:center;gap:8px;">
+                <div style="display:flex;align-items:center;gap:8px;height:40px;">
                   <span style="flex:none;display:inline-flex;">{{ item.iconEl }}</span>
-                  <span style="font-size:13.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:{{ item.labelColor }};line-height:1.15;">{{ item.label }}</span>
+                  <span style="flex:1;min-width:0;font-size:13.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:{{ item.labelColor }};line-height:1.15;">{{ item.label }}</span>
                 </div>
                 <sc-if value="{{ item.clickable }}" hint-placeholder-val="{{ true }}">
-                  <span onClick="{{ item.onOpen }}" role="button" tabindex="0" title="Ver detalhamento" style="font-size:66px;font-weight:800;letter-spacing:-3px;color:{{ item.valColor }};font-variant-numeric:tabular-nums;line-height:1;cursor:pointer;display:inline-flex;align-items:center;gap:12px;width:fit-content;" style-hover="opacity:.72;">{{ item.valor }}<span style="display:inline-flex;">{{ item.drillEl }}</span></span>
+                  <span onClick="{{ item.onOpen }}" role="button" tabindex="0" title="Ver detalhamento" style="font-size:66px;font-weight:800;letter-spacing:-3px;color:{{ item.valColor }};font-variant-numeric:tabular-nums;line-height:1;cursor:pointer;width:fit-content;" style-hover="opacity:.72;">{{ item.valor }}</span>
                 </sc-if>
                 <sc-if value="{{ item.notClickable }}">
                   <span style="font-size:66px;font-weight:800;letter-spacing:-3px;color:{{ item.valColor }};font-variant-numeric:tabular-nums;line-height:1;">{{ item.valor }}</span>
                 </sc-if>
-                <div style="font-size:13px;color:var(--maas-petroleo-45);display:flex;gap:7px;align-items:center;flex-wrap:wrap;"><span>{{ item.rule }}</span><sc-if value="{{ item.manual }}"><span style="color:var(--maas-laranja-escuro);font-weight:700;">✎ manual</span></sc-if></div>
+                <div style="height:30px;display:flex;align-items:flex-end;">
+                  <sc-if value="{{ item.clickable }}" hint-placeholder-val="{{ true }}">
+                    <span onClick="{{ item.onOpen }}" role="button" tabindex="0" title="Ver detalhamento" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;border:1px solid var(--border-subtle);color:var(--maas-petroleo-45);cursor:pointer;" style-hover="background:rgba(24,59,72,.05);border-color:var(--maas-petroleo-25);">{{ item.drillEl }}</span>
+                  </sc-if>
+                </div>
               </div>
             </sc-for>
           </div>
@@ -117,17 +142,21 @@
             <sc-for list="{{ blocoClientes }}" as="item" hint-placeholder-count="4">
               <sc-if value="{{ item.sep }}"><span style="width:1px;background:var(--border-subtle);margin:14px 0;"></span></sc-if>
               <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:12px 14px;background:{{ item.bg }};border-radius:12px;margin:2px;">
-                <div style="display:flex;align-items:center;gap:7px;">
+                <div style="display:flex;align-items:center;gap:7px;height:40px;">
                   <span style="flex:none;display:inline-flex;">{{ item.iconEl }}</span>
-                  <span style="font-size:12.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:{{ item.labelColor }};line-height:1.15;">{{ item.label }}</span>
+                  <span style="flex:1;min-width:0;font-size:12.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:{{ item.labelColor }};line-height:1.15;">{{ item.label }}</span>
                 </div>
                 <sc-if value="{{ item.clickable }}" hint-placeholder-val="{{ true }}">
-                  <span onClick="{{ item.onOpen }}" role="button" tabindex="0" title="Ver detalhamento" style="font-size:60px;font-weight:800;letter-spacing:-3px;color:{{ item.valColor }};font-variant-numeric:tabular-nums;line-height:1;cursor:pointer;display:inline-flex;align-items:center;gap:10px;width:fit-content;" style-hover="opacity:.72;">{{ item.valor }}<span style="display:inline-flex;">{{ item.drillEl }}</span></span>
+                  <span onClick="{{ item.onOpen }}" role="button" tabindex="0" title="Ver detalhamento" style="font-size:60px;font-weight:800;letter-spacing:-3px;color:{{ item.valColor }};font-variant-numeric:tabular-nums;line-height:1;cursor:pointer;width:fit-content;" style-hover="opacity:.72;">{{ item.valor }}</span>
                 </sc-if>
                 <sc-if value="{{ item.notClickable }}">
                   <span style="font-size:60px;font-weight:800;letter-spacing:-3px;color:{{ item.valColor }};font-variant-numeric:tabular-nums;line-height:1;">{{ item.valor }}</span>
                 </sc-if>
-                <div style="font-size:12.5px;color:var(--maas-petroleo-45);">{{ item.rule }}</div>
+                <div style="height:30px;display:flex;align-items:flex-end;">
+                  <sc-if value="{{ item.clickable }}" hint-placeholder-val="{{ true }}">
+                    <span onClick="{{ item.onOpen }}" role="button" tabindex="0" title="Ver detalhamento" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;border:1px solid var(--border-subtle);color:var(--maas-petroleo-45);cursor:pointer;" style-hover="background:rgba(24,59,72,.05);border-color:var(--maas-petroleo-25);">{{ item.drillEl }}</span>
+                  </sc-if>
+                </div>
               </div>
             </sc-for>
           </div>
@@ -244,21 +273,8 @@
               </div>
             </div>
 
-            <!-- Tile: Preventivas -->
-            <div style="background:rgba(24,59,72,.035);border:1px solid var(--border-subtle);border-radius:14px;padding:15px 18px;display:flex;flex-direction:column;min-height:0;">
-              <div style="font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--maas-petroleo-45);margin-bottom:10px;flex:none;">Preventivas</div>
-              <div style="display:flex;flex-direction:column;justify-content:space-between;flex:1;min-height:0;">
-                <sc-for list="{{ prevRows }}" as="p" hint-placeholder-count="3">
-                  <div style="display:flex;align-items:center;gap:11px;">
-                    <span style="width:100px;font-size:13px;font-weight:600;color:var(--maas-petroleo-60);">{{ p.k }}</span>
-                    <span style="flex:1;height:14px;background:var(--surface-card);border-radius:4px;overflow:hidden;"><span style="display:block;height:100%;width:{{ p.pct }};background:{{ p.color }};"></span></span>
-                    <span style="width:34px;text-align:right;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;color:{{ p.color }};">{{ p.n }}</span>
-                  </div>
-                </sc-for>
-              </div>
-            </div>
-
-            <!-- Tile: O.S. mais antigas -->
+            <!-- Tile: O.S. mais antigas — fica sob "Idade das O.S. abertas",
+                 que é o mesmo assunto (envelhecimento da fila). -->
             <div style="background:rgba(24,59,72,.035);border:1px solid var(--border-subtle);border-radius:14px;padding:15px 18px;display:flex;flex-direction:column;min-height:0;">
               <div style="display:flex;align-items:center;justify-content:space-between;flex:none;margin-bottom:6px;">
                 <span style="font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--maas-petroleo-45);">O.S. mais antigas</span>
@@ -268,8 +284,22 @@
                 <sc-for list="{{ priorityRows }}" as="r" hint-placeholder-count="3">
                   <div style="display:flex;align-items:center;gap:14px;padding:6px 0;border-bottom:1px solid var(--border-subtle);">
                     <span style="width:66px;text-align:right;font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:{{ r.ageColor }};line-height:1;letter-spacing:-.5px;flex:none;">{{ r.dias }}d</span>
-                    <span style="flex:1;font-size:16px;font-weight:800;color:var(--maas-petroleo);white-space:nowrap;letter-spacing:-.2px;">{{ r.placaMain }}</span>
+                    <span class="mono" style="flex:1;font-size:15px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;">{{ r.placaMain }}</span>
                     <span style="flex:none;display:inline-block;padding:4px 11px;border-radius:var(--radius-pill);font-size:11.5px;font-weight:700;color:{{ r.oslaFg }};background:{{ r.oslaBg }};border:1.5px solid {{ r.oslaBd }};">{{ r.osla }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- Tile: Preventivas -->
+            <div style="background:rgba(24,59,72,.035);border:1px solid var(--border-subtle);border-radius:14px;padding:15px 18px;display:flex;flex-direction:column;min-height:0;">
+              <div style="font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--maas-petroleo-45);margin-bottom:10px;flex:none;">Preventivas</div>
+              <div style="display:flex;flex-direction:column;justify-content:space-between;flex:1;min-height:0;">
+                <sc-for list="{{ prevRows }}" as="p" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:11px;">
+                    <span style="width:100px;font-size:13px;font-weight:600;color:var(--maas-petroleo-60);">{{ p.k }}</span>
+                    <span style="flex:1;height:14px;background:var(--surface-card);border-radius:4px;overflow:hidden;"><span style="display:block;height:100%;width:{{ p.pct }};background:{{ p.color }};"></span></span>
+                    <span style="width:34px;text-align:right;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;color:{{ p.color }};">{{ p.n }}</span>
                   </div>
                 </sc-for>
               </div>
@@ -284,7 +314,7 @@
   <sc-if value="{{ loading }}">
     <div style="position:fixed;inset:0;background:rgba(24,59,72,.72);display:flex;align-items:center;justify-content:center;z-index:200;">
       <div style="display:flex;flex-direction:column;align-items:center;gap:16px;background:var(--surface-page);padding:38px 54px;border-radius:var(--radius-card-lg);box-shadow:0 32px 90px rgba(24,59,72,.4);">
-        <span style="font-size:30px;font-weight:900;letter-spacing:-1px;color:var(--maas-petroleo);">maas<span style="color:var(--maas-verde);">.</span></span>
+        <img src="logo-maas.png" alt="MAAS" style="height:34px;width:auto;display:block;">
         <span style="font-size:17px;font-weight:700;color:var(--maas-petroleo);">Conectando à Central de Inteligência…</span>
         <span style="font-size:13px;color:var(--maas-petroleo-45);">O painel carrega assim que o primeiro ciclo de dados chegar.</span>
       </div>
@@ -294,48 +324,131 @@
   <!-- Página de detalhamento (drill-down ao clicar no número) -->
   <sc-if value="{{ detailOpen }}">
     <div onClick="{{ closeDetail }}" style="position:fixed;inset:0;background:rgba(24,59,72,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:48px;">
-      <div onClick="{{ stop }}" style="width:min(1240px,95vw);max-height:88vh;background:var(--surface-page);border-radius:var(--radius-card-lg);box-shadow:0 32px 90px rgba(24,59,72,.4);display:flex;flex-direction:column;overflow:hidden;">
+      <!-- Altura FIXA (não max-height): o popup mantém o mesmo tamanho com ou
+           sem filtro; quem varia é a quantidade de linhas dentro do scroll. -->
+      <div onClick="{{ stop }}" style="width:min(1420px,95vw);height:88vh;background:var(--surface-page);border-radius:var(--radius-card-lg);box-shadow:0 32px 90px rgba(24,59,72,.4);display:flex;flex-direction:column;overflow:hidden;">
         <!-- Cabeçalho -->
         <div style="display:flex;align-items:center;gap:16px;padding:26px 32px;border-bottom:1px solid var(--border-subtle);flex:none;">
-          <span style="display:inline-flex;flex:none;width:52px;height:52px;border-radius:14px;background:var(--maas-verde-16);align-items:center;justify-content:center;">{{ detailIconEl }}</span>
+          <span style="display:inline-flex;flex:none;width:52px;height:52px;border-radius:14px;background:{{ sevBg }};align-items:center;justify-content:center;">{{ detailIconEl }}</span>
           <div style="display:flex;flex-direction:column;gap:3px;">
             <div style="display:flex;align-items:baseline;gap:12px;">
               <span style="font-size:24px;font-weight:800;letter-spacing:-.4px;color:var(--maas-petroleo);">{{ detailTitle }}</span>
-              <span style="font-size:14px;font-weight:700;color:var(--maas-verde-escuro-2);background:var(--maas-verde-16);padding:3px 11px;border-radius:var(--radius-pill);white-space:nowrap;">{{ detailCount }} registros</span>
+              <span style="font-size:14px;font-weight:700;color:{{ sevFg }};background:{{ sevBg }};padding:3px 11px;border-radius:var(--radius-pill);white-space:nowrap;">{{ detailCount }} registros</span>
             </div>
             <span style="font-size:14px;color:var(--maas-petroleo-45);">{{ detailSubtitle }}</span>
           </div>
-          <span onClick="{{ closeDetail }}" role="button" tabindex="0" title="Fechar" style="margin-left:auto;flex:none;width:40px;height:40px;border-radius:10px;border:1px solid var(--border-default);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--surface-sunken);">{{ icClose }}</span>
+          <span style="margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:9px;background:var(--surface-sunken);border:1px solid var(--border-subtle);border-radius:var(--radius-pill);padding:0 16px;height:42px;min-width:300px;">
+            <span style="display:inline-flex;flex:none;">{{ icBusca }}</span>
+            <input value="{{ filtroQ }}" onInput="{{ onBuscar }}" placeholder="Buscar placa, ordem, S.S. ou serviço"
+                   style="flex:1;border:none;outline:none;background:transparent;font-family:var(--font-sans);font-size:14px;color:var(--maas-petroleo);min-width:0;">
+          </span>
+          <span onClick="{{ closeDetail }}" role="button" tabindex="0" title="Fechar" style="flex:none;width:40px;height:40px;border-radius:10px;border:1px solid var(--border-default);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--surface-sunken);">{{ icClose }}</span>
+        </div>
+
+        <!-- Barra de filtros: serviço, situação e período -->
+        <div style="display:flex;flex-direction:column;gap:9px;padding:13px 32px;border-bottom:1px solid var(--border-subtle);flex:none;background:var(--surface-card);">
+          <!-- Uma linha por grupo de filtro: serviço · situação · contrato · abertura -->
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;width:64px;">Serviço</span>
+          <sc-for list="{{ servChips }}" as="c" hint-placeholder-count="4">
+            <span onClick="{{ c.onToggle }}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:var(--radius-pill);border:1.5px solid {{ c.bd }};background:{{ c.bg }};cursor:pointer;white-space:nowrap;" style-hover="border-color:{{ c.cor }};">
+              <span style="width:8px;height:8px;border-radius:50%;background:{{ c.cor }};flex:none;"></span>
+              <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>
+              <span class="mono" style="font-size:12px;font-weight:700;color:var(--maas-petroleo-45);">{{ c.n }}</span>
+            </span>
+          </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;width:64px;">Situação</span>
+          <sc-for list="{{ sitChips }}" as="c" hint-placeholder-count="2">
+            <span onClick="{{ c.onToggle }}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:var(--radius-pill);border:1.5px solid {{ c.bd }};background:{{ c.bg }};cursor:pointer;white-space:nowrap;" style-hover="border-color:{{ c.cor }};">
+              <span style="width:8px;height:8px;border-radius:50%;background:{{ c.cor }};flex:none;"></span>
+              <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>
+              <span class="mono" style="font-size:12px;font-weight:700;color:var(--maas-petroleo-45);">{{ c.n }}</span>
+            </span>
+          </sc-for>
+          <span style="width:1px;height:22px;background:var(--border-subtle);flex:none;margin:0 6px;"></span>
+          <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;">Abertura</span>
+          <sc-for list="{{ perChips }}" as="c" hint-placeholder-count="3">
+            <span onClick="{{ c.onToggle }}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:var(--radius-pill);border:1.5px solid {{ c.bd }};background:{{ c.bg }};cursor:pointer;white-space:nowrap;" style-hover="border-color:{{ c.cor }};">
+              <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>
+              <span class="mono" style="font-size:12px;font-weight:700;color:var(--maas-petroleo-45);">{{ c.n }}</span>
+            </span>
+          </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;width:64px;">Contrato</span>
+          <sc-for list="{{ ctrChips }}" as="c" hint-placeholder-count="3">
+            <span onClick="{{ c.onToggle }}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:var(--radius-pill);border:1.5px solid {{ c.bd }};background:{{ c.bg }};cursor:pointer;white-space:nowrap;" style-hover="border-color:{{ c.cor }};">
+              <span class="mono" style="font-size:12.5px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>
+              <span class="mono" style="font-size:12px;font-weight:700;color:var(--maas-petroleo-45);">{{ c.n }}</span>
+            </span>
+          </sc-for>
+          <sc-if value="{{ temFiltro }}">
+            <span onClick="{{ limparFiltros }}" role="button" tabindex="0" class="sans" style="margin-left:auto;font-size:13px;font-weight:700;color:var(--maas-verde-escuro-2);cursor:pointer;white-space:nowrap;" style-hover="opacity:.7;">Limpar filtros</span>
+          </sc-if>
+          </div>
         </div>
         <!-- Corpo -->
         <div style="overflow-y:auto;overflow-x:auto;flex:1;min-height:0;">
-          <sc-if value="{{ detailEmpty }}">
+          <sc-if value="{{ semNadaNaFonte }}">
             <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:80px 20px;">
               <span style="display:inline-flex;">{{ icSearch }}</span>
               <span style="font-size:17px;font-weight:700;color:var(--maas-petroleo-60);">Nenhum registro no momento</span>
               <span style="font-size:14px;color:var(--maas-petroleo-45);">Este indicador está zerado — não há solicitações ou ordens a listar.</span>
             </div>
           </sc-if>
+          <sc-if value="{{ vazioPorFiltro }}">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:80px 20px;">
+              <span style="display:inline-flex;">{{ icSearch }}</span>
+              <span style="font-size:17px;font-weight:700;color:var(--maas-petroleo-60);">Nenhum registro com esses filtros</span>
+              <span onClick="{{ limparFiltros }}" role="button" tabindex="0" class="sans" style="font-size:14px;font-weight:700;color:var(--maas-verde-escuro-2);cursor:pointer;" style-hover="opacity:.7;">Limpar filtros</span>
+            </div>
+          </sc-if>
           <sc-if value="{{ hasDetailRows }}" hint-placeholder-val="{{ true }}">
-            <div style="display:grid;grid-template-columns:140px 86px 86px minmax(240px,1fr) 122px 126px;min-width:0;padding:14px 28px;border-left:4px solid transparent;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
+            <div style="display:grid;grid-template-columns:118px 70px 70px minmax(190px,1fr) 92px minmax(150px,.75fr) 140px 122px 124px;column-gap:11px;min-width:0;padding:14px 28px;border-left:4px solid transparent;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Abertura</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Solic.</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Ordem</span>
-              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Veículo</span>
-              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Serviço</span>
-              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);text-align:right;">Situação</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Veículo &amp; serviço</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Contrato</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Reserva</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Tipo</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Situação</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Previsão</span>
             </div>
             <sc-for list="{{ detailRows }}" as="r" hint-placeholder-count="6">
-              <div style="display:grid;grid-template-columns:140px 86px 86px minmax(240px,1fr) 122px 126px;min-width:0;padding:15px 28px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.ssBar }};align-items:center;font-variant-numeric:tabular-nums;" style-hover="background:var(--surface-sunken);">
-                <span style="font-size:14px;color:var(--maas-petroleo-60);">{{ r.abertura }}</span>
-                <span style="font-size:14px;font-weight:{{ r.ssWeight }};color:{{ r.ssFg }};">{{ r.ss }}</span>
-                <span style="font-size:14px;font-weight:700;color:var(--maas-petroleo);">{{ r.os }}</span>
-                <span style="display:flex;flex-direction:column;min-width:0;">
-                  <span style="font-size:14px;font-weight:800;color:var(--maas-petroleo);letter-spacing:-.2px;">{{ r.placa }}</span>
-                  <sc-if value="{{ r.nome }}"><span style="font-size:11px;color:var(--maas-petroleo-45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.nome }}</span></sc-if>
+              <div style="display:grid;grid-template-columns:118px 70px 70px minmax(190px,1fr) 92px minmax(150px,.75fr) 140px 122px 124px;column-gap:11px;min-width:0;padding:15px 28px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.ssBar }};align-items:center;font-variant-numeric:tabular-nums;" style-hover="background:var(--surface-sunken);">
+                <span style="display:flex;flex-direction:column;gap:1px;">
+                  <span class="mono" style="font-size:13px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;">{{ r.dataDia }}</span>
+                  <span class="mono" style="font-size:11.5px;color:var(--maas-petroleo-45);">{{ r.dataHora }}</span>
                 </span>
-                <span style="font-size:14px;color:var(--maas-petroleo);">{{ r.serv }}</span>
-                <span style="text-align:right;"><span style="display:inline-block;padding:5px 13px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:700;color:{{ r.stStyle.fg }};background:{{ r.stStyle.bg }};border:1.5px solid {{ r.stStyle.bd }};white-space:nowrap;">{{ r.st }}</span></span>
+                <span class="mono" style="font-size:14px;font-weight:{{ r.ssWeight }};color:{{ r.ssFg }};">{{ r.ss }}</span>
+                <span class="mono" style="font-size:14px;font-weight:700;color:var(--maas-petroleo);">{{ r.os }}</span>
+                <span style="display:flex;align-items:baseline;gap:9px;min-width:0;">
+                  <span class="mono" style="font-size:14.5px;font-weight:700;color:var(--maas-petroleo);flex:none;">{{ r.placa }}</span>
+                  <sc-if value="{{ r.nome }}"><span class="sans" style="font-size:12px;color:var(--maas-petroleo-45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">{{ r.nome }}</span></sc-if>
+                </span>
+                <span class="mono" style="font-size:13px;font-weight:600;color:var(--maas-petroleo-60);white-space:nowrap;">{{ r.contratoTxt }}</span>
+                <span style="display:flex;flex-direction:column;min-width:0;">
+                  <sc-if value="{{ r.temReserva }}" hint-placeholder-val="{{ true }}">
+                    <span class="mono" style="font-size:14px;font-weight:700;color:var(--maas-verde-escuro-2);">{{ r.reserva }}</span>
+                    <sc-if value="{{ r.reservaNome }}"><span class="sans" style="font-size:11px;color:var(--maas-petroleo-45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.reservaNome }}</span></sc-if>
+                  </sc-if>
+                  <sc-if value="{{ r.semReserva }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
+                </span>
+                <span><span class="sans" style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:var(--radius-pill);background:var(--surface-sunken);font-size:12.5px;font-weight:600;color:var(--maas-petroleo);white-space:nowrap;"><span style="width:7px;height:7px;border-radius:50%;background:{{ r.servCor }};flex:none;"></span>{{ r.serv }}</span></span>
+                <span><span class="sans" style="display:inline-block;padding:5px 13px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:600;color:{{ r.stStyle.fg }};background:{{ r.stStyle.bg }};border:1.5px solid {{ r.stStyle.bd }};white-space:nowrap;">{{ r.st }}</span></span>
+                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;">
+                  <sc-if value="{{ r.temPrevisao }}" hint-placeholder-val="{{ true }}">
+                    <span class="mono" style="font-size:12.5px;font-weight:700;color:{{ r.previsaoCor }};white-space:nowrap;">{{ r.previsaoDia }}</span>
+                    <span class="mono" style="font-size:11.5px;color:{{ r.previsaoCorFraca }};">{{ r.previsaoHora }}</span>
+                  </sc-if>
+                  <sc-if value="{{ r.semPrevisao }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
+                </span>
+                <sc-if value="{{ r.temDesc }}">
+                  <span class="sans" style="grid-column:1/-1;margin-top:7px;font-size:12.5px;line-height:1.45;color:var(--maas-petroleo-60);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;" title="{{ r.desc }}">{{ r.desc }}</span>
+                </sc-if>
               </div>
             </sc-for>
           </sc-if>
@@ -351,6 +464,19 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script>
+// Fator para caber o palco fixo de 1920×1080 na janela atual.
+const FIT_SCALE = () => Math.round(Math.min(window.innerWidth / 1920, window.innerHeight / 1080) * 1000) / 1000;
+
+// Cor por tipo de serviço — mesma família da paleta usada no agrupamento de S.S.
+const SERV_CORES = {
+  'Corretiva':      '#3E7C8C',
+  'Sinistro':       'var(--maas-laranja)',
+  'Socorro':        '#C2554E',
+  'Preventiva':     '#8A5FB0',
+  'Implementação':  'var(--maas-verde)',
+};
+const SERV_COR = (s) => SERV_CORES[s] || 'var(--maas-petroleo-45)';
+
 class Component extends DCLogic {
   // ================================================================
   //  vReal-time — mesmos componentes visuais do vBeta; os números
@@ -358,7 +484,18 @@ class Component extends DCLogic {
   //  Nenhum dado fica hardcoded aqui e o navegador nunca fala
   //  com o BigQuery diretamente.
   // ================================================================
-  state = { clock: '', scale: 1, detailId: null, data: null, conn: 'connecting' };
+  // scale já nasce calculado: se começasse em 1, o navegador pintaria o painel
+  // uma vez em tamanho cheio (fora de posição, pois a origem é o centro) antes
+  // de fit() corrigir — e essa primeira pintura pode ficar na tela como um
+  // "fantasma" deslocado em janelas menores que 1920×1080.
+  state = { clock: '', scale: FIT_SCALE(), detailId: null, data: null, conn: 'connecting',
+            // Filtros do drill-down. q = busca livre (S.S., O.S., placa, modelo,
+            // descrição, data); serv/sit/per = facetas. Zerados a cada abertura.
+            filtro: { q: '', serv: '', sit: '', per: '', ctr: '' } };
+
+  // Abrir/fechar o detalhamento sempre por aqui, para os filtros não vazarem
+  // de um KPI para o outro.
+  abrirDetalhe(id) { this.setState({ detailId: id, filtro: { q:'', serv:'', sit:'', per:'', ctr:'' } }); }
 
   componentDidMount() {
     this.tick();
@@ -399,8 +536,7 @@ class Component extends DCLogic {
   }
 
   fit() {
-    const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
-    this.setState({ scale: Math.round(s * 1000) / 1000 });
+    this.setState({ scale: FIT_SCALE() });
   }
   tick() {
     this.setState({ clock: new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' }) });
@@ -482,12 +618,13 @@ class Component extends DCLogic {
       return {
         iconEl: this.ic(c.icon, 22, hero ? '#B83A32' : 'var(--maas-petroleo-45)'),
         label: c.label, valor: c.valor, rule: c.rule, manual: !!c.manual,
+        pct: c.pct || '', temPct: !!c.pct,
         valColor, sep: i > 0, bg: hero ? 'rgba(217,83,79,.06)' : 'transparent',
         labelColor: hero ? '#B83A32' : 'var(--maas-petroleo-60)',
         clickable,
         notClickable: !clickable,
-        onOpen: clickable ? () => this.setState({ detailId: c.id }) : null,
-        drillEl: clickable ? this.ic('maximize', 20, 'var(--maas-petroleo-25)') : null,
+        onOpen: clickable ? () => this.abrirDetalhe(c.id) : null,
+        drillEl: clickable ? this.ic('maximize', 16, 'var(--maas-petroleo-45)') : null,
         _status: status,
       };
     });
@@ -496,7 +633,10 @@ class Component extends DCLogic {
     const osDefs = [
       { id:'ssAguardando', icon:'inbox',      label:'S.S. aguardando',       valor:K.ssAguardando, status:'warn',    rule:'alerta se > 0' },
       { id:'osAbertas',    icon:'clipboard',  label:'Total O.S. abertas',    valor:K.osAbertas,    status:'neutral', rule:'informativo' },
-      { id:'osForaPrazo',  icon:'alarm',      label:'O.S. fora do prazo',    valor:K.osForaPrazo,  status:'crit',    rule:'crítico se > 0' },
+      // % sobre o TOTAL de O.S. abertas — inclui Sinistro/Implementação, que
+      // não têm obrigação de prazo (ver SERVICOS_SEM_SLA no backend).
+      { id:'osForaPrazo',  icon:'alarm',      label:'O.S. fora do prazo',    valor:K.osForaPrazo,  status:'crit',    rule:'crítico se > 0',
+        pct: '' },
       { id:'qualidade',    icon:'badgeCheck', label:'Controle de qualidade', valor:K.qualidade,    status:'warn',    rule:'atenção se > 0' },
       { id:'retorno',      icon:'rotate',     label:'Retorno',               valor:K.retorno,      status:'warn',    rule:'atenção se > 0', manual:true },
     ];
@@ -510,28 +650,44 @@ class Component extends DCLogic {
     const blocoOS = mk(osDefs);
     const blocoClientes = mk(clienteDefs);
 
-    // Trilho de alertas — só o que disparou
     const railStyle = { crit:{fg:'#B83A32',bg:'rgba(217,83,79,.10)',bd:'rgba(217,83,79,.40)'}, warn:{fg:'var(--maas-laranja-escuro)',bg:'var(--maas-laranja-16)',bd:'var(--maas-laranja-30)'} };
+
+    // Severidade agregada dos cards — não é mais o que o trilho mostra, mas
+    // segue alimentando o status do cabeçalho ("Atenção · priorizar").
     const alertSrc = [...blocoOS, ...blocoClientes]
       .filter(d => d.valor > 0 && (d._status === 'crit' || d._status === 'warn'))
       .map(d => ({ label:d.label, valor:d.valor, status:d._status }));
     if (K.prevAtrasadas > 0) alertSrc.push({ label:'Preventivas atrasadas', valor:K.prevAtrasadas, status:'crit' });
-    const activeAlerts = alertSrc
-      .sort((a,b) => (a.status==='crit'?0:1) - (b.status==='crit'?0:1))
-      .map(d => ({ label:d.label, valor:d.valor, sev:d.status==='crit'?'Crítico':'Atenção', iconEl:this.ic(d.status==='crit'?'alertTriangle':'alarm', 22), ...railStyle[d.status] }));
+    const temCritAgregado = alertSrc.some(d => d.status === 'crit');
+
+    // Trilho — uma S.S. aguardando abertura de O.S. por chip (mais recente
+    // primeiro, ordem que já vem do backend). Cada chip herda a cor do tipo de
+    // serviço (mesma paleta da "Composição dos serviços"); fundo/borda saem
+    // dela por transparência.
+    const activeAlerts = ((D.detalhes && D.detalhes.ssAguardando) || []).map(s => {
+      const cor = SERV_COR(s.serv);
+      return {
+        valor: s.ss, label: s.placa, sev: 'Aguardando · ' + s.serv,
+        iconEl: this.ic('inbox', 22),
+        fg: cor,
+        bg: `color-mix(in srgb, ${cor} 12%, var(--surface-card))`,
+        bd: `color-mix(in srgb, ${cor} 38%, transparent)`,
+      };
+    });
 
     // 03 Veículos — situação da frota (destaque) + composição dos serviços
     const tipoRaw = D.tipoServico || [];
-    const tipoColor = { 'Sinistro':'var(--maas-laranja)', 'Socorro':'#D9534F', 'Corretiva':'var(--maas-laranja)' };
-    const tipoRows = tipoRaw.map(t => ({ k:t.k, n:t.n, color:tipoColor[t.k] || 'var(--maas-verde)' }));
+    // Cor por tipo de serviço = paleta canônica SERV_CORES, a mesma dos chips de
+    // S.S. e da coluna "Tipo" do detalhamento. Cada serviço tem UMA cor no painel.
+    const tipoRows = tipoRaw.map(t => ({ k:t.k, n:t.n, color:SERV_COR(t.k) }));
     const Veic = D.veiculos || { mobilizados:0, naoMobilizados:0 };
     const Loc  = D.localizacao || { interna:0, externa:0 };
     const veicTotal = (Veic.mobilizados||0) + (Veic.naoMobilizados||0);
-    const openVeic = () => this.setState({ detailId: 'veiculos' });
+    const openVeic = () => this.abrirDetalhe('veiculos');
     const icVeicDrill = this.ic('maximize', 18, 'var(--maas-petroleo-25)');
     const TV = D.tipoVeiculo || { pesada:0, leve:0 };
     const tipoVeicRows = [
-      { k:'Pesada', n:TV.pesada, iconEl:this.ic('truck',19,'var(--maas-petroleo)') },
+      { k:'Pesado', n:TV.pesada, iconEl:this.ic('truck',19,'var(--maas-petroleo)') },
       { k:'Leve',   n:TV.leve,   iconEl:this.ic('car',19,'var(--maas-verde)') },
     ];
     const mix = (v,p) => `color-mix(in srgb, ${v} ${p}, var(--surface-card))`;
@@ -590,7 +746,7 @@ class Component extends DCLogic {
       });
 
     // Status geral (mostrado na barra única de alertas)
-    const temCrit = activeAlerts.some(a => a.sev === 'Crítico');
+    const temCrit = temCritAgregado;
 
     return {
       scale: this.state.scale,
@@ -611,29 +767,39 @@ class Component extends DCLogic {
   }
 
   // ---- Drill-down: título/ícone fixos por KPI, linhas vindas do payload ----
+  // `sev` espelha o status do card no painel (crit/warn/neutral) e tinge o
+  // cabeçalho do detalhamento — verde num KPI crítico passava a mensagem errada.
   detailMeta() {
     return {
-      ssAguardando:  { title:'S.S. aguardando',              icon:'inbox',      sub:(n)=> n + ' solicitações ainda sem ordem de serviço' },
-      osAbertas:     { title:'Total O.S. abertas',           icon:'clipboard',  sub:(n)=> 'Amostra das ' + n + ' ordens mais recentes com status aberto' },
-      osForaPrazo:   { title:'O.S. fora do prazo',           icon:'alarm',      sub:(n)=> n + ' ordens abertas com o SLA da O.S. estourado' },
-      qualidade:     { title:'Controle de qualidade',        icon:'badgeCheck', sub:(n)=> n + ' O.S. enviada(s) pela manutenção para o controle de qualidade' },
-      retorno:       { title:'Retorno',                      icon:'rotate',     sub:()=> 'Indicador manual — sem fonte automática por enquanto' },
-      clientesEsp:   { title:'Clientes esp. / serv. rápido', icon:'zap',        sub:(n)=> n ? n + ' clientes aguardando' : 'Nenhum cliente aguardando no momento' },
-      clausula:      { title:'Cláusula contratual',          icon:'fileText',   sub:(n)=> n + ' veículos em contrato com o SLA da cláusula estourado (exceto implementação)' },
-      reservaLimite: { title:'Reservas no limite',           icon:'car',        sub:(n)=> n ? n + ' contratos no limite' : 'Nenhum contrato no limite de reservas' },
-      sos:           { title:'S.O.S',                        icon:'lifebuoy',   sub:(n)=> n + ' chamados de socorro em atendimento' },
-      veiculos:      { title:'Veículos em atendimento',      icon:'truck',      sub:(n)=> n + ' veículos na oficina — placa, modelo, O.S., S.S. e serviço' },
+      ssAguardando:  { sev:'warn',    title:'S.S. aguardando',              icon:'inbox',      sub:(n)=> n + ' solicitações ainda sem ordem de serviço' },
+      osAbertas:     { sev:'neutral', title:'Total O.S. abertas',           icon:'clipboard',  sub:(n)=> 'Amostra das ' + n + ' ordens mais recentes com status aberto' },
+      osForaPrazo:   { sev:'crit',    title:'O.S. fora do prazo',           icon:'alarm',      sub:(n)=> n + ' ordens abertas com o SLA da O.S. estourado' },
+      qualidade:     { sev:'warn',    title:'Controle de qualidade',        icon:'badgeCheck', sub:(n)=> n + ' O.S. enviada(s) pela manutenção para o controle de qualidade' },
+      retorno:       { sev:'warn',    title:'Retorno',                      icon:'rotate',     sub:()=> 'Indicador manual — sem fonte automática por enquanto' },
+      clientesEsp:   { sev:'warn',    title:'Clientes esp. / serv. rápido', icon:'zap',        sub:(n)=> n ? n + ' clientes aguardando' : 'Nenhum cliente aguardando no momento' },
+      clausula:      { sev:'crit',    title:'Cláusula contratual',          icon:'fileText',   sub:(n)=> n + ' veículos em contrato com o SLA da cláusula estourado (exceto implementação)' },
+      reservaLimite: { sev:'crit',    title:'Reservas no limite',           icon:'car',        sub:(n)=> n ? n + ' contratos no limite' : 'Nenhum contrato no limite de reservas' },
+      sos:           { sev:'crit',    title:'S.O.S',                        icon:'lifebuoy',   sub:(n)=> n + ' chamados de socorro em atendimento' },
+      veiculos:      { sev:'neutral', title:'Veículos em atendimento',      icon:'truck',      sub:(n)=> n + ' veículos na oficina — placa, modelo, O.S., S.S. e serviço' },
     };
   }
 
   buildDetail() {
     const id = this.state.detailId;
     if (!id) return { detailOpen:false, detailRows:[], hasDetailRows:false, detailTitle:'', detailSubtitle:'', detailCount:0, detailIconEl:null, detailEmpty:false, closeDetail:()=>{}, stop:(e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); }, icClose:null, icSearch:null };
-    const meta = this.detailMeta()[id] || { title:'', icon:'clipboard', sub:()=> '' };
+    const meta = this.detailMeta()[id] || { sev:'neutral', title:'', icon:'clipboard', sub:()=> '' };
+    const sevCor = {
+      crit:    { fg:'#B83A32',                    bg:'rgba(217,83,79,.12)' },
+      warn:    { fg:'var(--maas-laranja-escuro)', bg:'var(--maas-laranja-16)' },
+      neutral: { fg:'var(--maas-verde-escuro-2)', bg:'var(--maas-verde-16)' },
+    }[meta.sev || 'neutral'];
     const chip = (t) => {
       if (t==='Fora do Prazo') return { fg:'#B83A32', bg:'rgba(217,83,79,.10)', bd:'rgba(217,83,79,.35)' };
       if (t==='No prazo')      return { fg:'var(--maas-verde-escuro-2)', bg:'var(--maas-verde-16)', bd:'transparent' };
       if (t==='Sem SLA')       return { fg:'var(--maas-petroleo-60)', bg:'transparent', bd:'var(--maas-petroleo-18)' };
+      // Sinistro/Implementação: sem obrigação de prazo, então neutro — nunca
+      // vermelho, para não parecer atraso.
+      if (t==='Sem prazo')     return { fg:'var(--maas-petroleo-60)', bg:'var(--surface-sunken)', bd:'transparent' };
       if (t==='Crítico')       return { fg:'#B83A32', bg:'rgba(217,83,79,.10)', bd:'rgba(217,83,79,.35)' };
       return { fg:'var(--maas-petroleo-60)', bg:'var(--surface-sunken)', bd:'transparent' };
     };
@@ -647,25 +813,103 @@ class Component extends DCLogic {
     Object.keys(firstSeen).sort((a, b) => firstSeen[a] - firstSeen[b]).forEach(ss => {
       if (ssCount[ss] > 1) { ssColor[ss] = palette[ci % palette.length]; ci++; }
     });
-    const rows = raw.slice()
+    const todas = raw.slice()
       .sort((a, b) => (firstSeen[a.ss] - firstSeen[b.ss]))   // mesma S.S. lado a lado
       .map(r => {
         const g = ssCount[r.ss] > 1;
+        // Coluna "Reserva": ou o veículo designado, ou "—". O backend ainda
+        // distingue 'aguardando' de 'sem pedido' em reservaSt, mas o painel
+        // trata os dois como vazio.
         return { ...r, stStyle: chip(r.st), ssGrouped: g,
+                 temReserva: !!r.reserva,
+                 semReserva: !r.reserva,
+                 // Descrição do serviço: só no detalhamento de O.S. abertas.
+                 temDesc: id === 'osAbertas' && !!r.desc,
                  ssBar: g ? ssColor[r.ss] : 'transparent',
                  ssFg: g ? ssColor[r.ss] : 'var(--maas-petroleo-60)',
+                 servCor: SERV_COR(r.serv),
+                 contratoTxt: r.contrato || '—',
+                 dataDia: (r.abertura || '').split(' ')[0] || '—',
+                 dataHora: (r.abertura || '').split(' ')[1] || '',
+                 // Previsão de entrega (STJ dtMpFim+horaMpFim). Vermelha quando
+                 // já venceu e a ordem continua aberta.
+                 temPrevisao: !!r.previsao,
+                 semPrevisao: !r.previsao,
+                 previsaoDia: (r.previsao || '').split(' ')[0] || '',
+                 previsaoHora: (r.previsao || '').split(' ')[1] || '',
+                 previsaoCor: r.previsaoAtrasada ? '#B83A32' : 'var(--maas-petroleo)',
+                 previsaoCorFraca: r.previsaoAtrasada ? 'rgba(184,58,50,.7)' : 'var(--maas-petroleo-45)',
                  ssWeight: g ? '800' : '400' };
       });
+
+    // ---- Filtros -----------------------------------------------------------
+    const f = this.state.filtro || { q:'', serv:'', sit:'', per:'', ctr:'' };
+    const alvo = (r) => [r.ss, r.os, r.placa, r.nome, r.desc, r.abertura, r.serv, r.st, r.contrato]
+      .join(' ').toLowerCase();
+    const q = f.q.trim().toLowerCase();
+    const diasDe = (r) => {
+      if (!r.aberturaIso) return null;
+      return Math.floor((Date.now() - new Date(r.aberturaIso)) / 86400000);
+    };
+    const passaPeriodo = (r) => {
+      if (!f.per) return true;
+      const d = diasDe(r);
+      if (d === null) return false;          // sem data não entra em recorte de data
+      return f.per === 'hoje' ? d <= 0 : f.per === '7' ? d <= 7 : d <= 30;
+    };
+    const rows = todas.filter(r =>
+      (!q || alvo(r).includes(q)) &&
+      (!f.serv || r.serv === f.serv) &&
+      (!f.sit  || r.st   === f.sit) &&
+      (!f.ctr  || (r.contrato || '—') === f.ctr) &&
+      passaPeriodo(r));
+
+    // Contagens das facetas sobre o conjunto inteiro (como na referência).
+    const conta = (campo) => {
+      const m = new Map();
+      todas.forEach(r => { const k = r[campo] || '—'; m.set(k, (m.get(k) || 0) + 1); });
+      return [...m.entries()].sort((a, b) => b[1] - a[1]);
+    };
+    const setF = (patch) => this.setState({ filtro: { ...f, ...patch } });
+    const mkChip = (k, n, ativo, cor, onToggle) => ({
+      k, n, ativo, cor, onToggle,
+      bg: ativo ? 'var(--surface-card)' : 'transparent',
+      bd: ativo ? cor : 'var(--border-subtle)',
+      fg: ativo ? 'var(--maas-petroleo)' : 'var(--maas-petroleo-60)',
+      peso: ativo ? '700' : '600',
+    });
+    const servChips = conta('serv').map(([k, n]) =>
+      mkChip(k, n, f.serv === k, SERV_COR(k), () => setF({ serv: f.serv === k ? '' : k })));
+    const sitChips = conta('st').map(([k, n]) =>
+      mkChip(k, n, f.sit === k, chip(k).fg, () => setF({ sit: f.sit === k ? '' : k })));
+    const ctrChips = conta('contrato').map(([k, n]) =>
+      mkChip(k, n, f.ctr === k, 'var(--maas-petroleo)', () => setF({ ctr: f.ctr === k ? '' : k })));
+    const perChips = [['hoje','Hoje'],['7','7 dias'],['30','30 dias']].map(([v, rot]) =>
+      mkChip(rot, todas.filter(r => { const d = diasDe(r); return d !== null && (v==='hoje'? d<=0 : v==='7'? d<=7 : d<=30); }).length,
+             f.per === v, 'var(--maas-petroleo)', () => setF({ per: f.per === v ? '' : v })));
+
+    const temFiltro = !!(q || f.serv || f.sit || f.per || f.ctr);
     return {
       detailOpen: true,
       detailTitle: meta.title,
-      detailSubtitle: meta.sub(rows.length),
+      detailSubtitle: temFiltro ? (rows.length + ' de ' + todas.length + ' registros após filtro')
+                                : meta.sub(todas.length),
       detailCount: rows.length,
       detailRows: rows,
       hasDetailRows: rows.length > 0,
       detailEmpty: rows.length === 0,
-      detailIconEl: this.ic(meta.icon, 26, 'var(--maas-verde)'),
+      semNadaNaFonte: todas.length === 0,
+      vazioPorFiltro: todas.length > 0 && rows.length === 0,
+      filtroQ: f.q,
+      onBuscar: (e) => setF({ q: e && e.target ? e.target.value : '' }),
+      servChips, sitChips, perChips, ctrChips, temFiltro,
+      limparFiltros: () => this.setState({ filtro: { q:'', serv:'', sit:'', per:'', ctr:'' } }),
+      mostraDesc: id === 'osAbertas',
+      detailIconEl: this.ic(meta.icon, 26, sevCor.fg),
+      sevFg: sevCor.fg,
+      sevBg: sevCor.bg,
       icClose: this.ic('x', 22, 'var(--maas-petroleo)'),
+      icBusca: this.ic('search', 17, 'var(--maas-petroleo-45)'),
       icSearch: this.ic('search', 34, 'var(--maas-petroleo-25)'),
       stop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
       closeDetail: () => this.setState({ detailId: null }),

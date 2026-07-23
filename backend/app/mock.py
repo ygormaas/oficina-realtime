@@ -11,11 +11,16 @@ from datetime import datetime, timedelta
 from .kpis import TZ_BR
 
 
-def _linha(ab: datetime, ss: str, os_: str, placa: str, mobil: bool, serv: str, st: str) -> dict:
+def _linha(ab: datetime, ss: str, os_: str, placa: str, mobil: bool, serv: str, st: str,
+           reserva: str = "", reserva_st: str = "") -> dict:
     return {
         "abertura": ab.strftime("%d/%m %H:%M"),
         "aberturaIso": ab.isoformat(),
-        "ss": ss, "os": os_, "placa": placa,
+        "ss": ss, "os": os_, "placa": placa, "contrato": "",
+        # Reserva que substitui o veículo parado — ver _reserva_de_mon em kpis.py.
+        "reserva": reserva, "reservaNome": "", "reservaSt": reserva_st,
+        "desc": "",   # descrição do serviço (STJ.observa)
+        "previsao": "", "previsaoAtrasada": False,   # STJ.dtMpFim + horaMpFim
         "mobil": "Mobilizado" if mobil else "Não mobilizado",
         "serv": serv, "st": st,
     }

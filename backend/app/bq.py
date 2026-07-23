@@ -56,7 +56,7 @@ def fetch_manutencao() -> list[dict]:
     sql = f"""
         SELECT ordem, solici, dtOrigem, servico, NomeServico, codBem,
                situacao, termino, dtMpFim, horaMpFim, qtdRep, tipoRet, xRetorn,
-               descricaoMobilizacao, xBemRes, localizacao_veiculo
+               descricaoMobilizacao, xBemRes, localizacao_veiculo, observa
         FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.{config.BQ_VIEW_MANUTENCAO}`
         LIMIT {config.BQ_MAX_ROWS}
     """
@@ -87,7 +87,7 @@ def fetch_monitoramento() -> list[dict]:
     StatusOS, nmServ, Xcontr, xss, key_filial_solici) — ver kpis.py."""
     sql = f"""
         SELECT ordemSTJ, Ordem, Solici, Codbem, DataHoraAbertura, key_filial_solici,
-               Xesper, Xreser, SLAVencimentoOS, SLAVencimentoCC,
+               Xesper, Xreser, Xbemre, SLAVencimentoOS, SLAVencimentoCC,
                SLAUltrapassadoCC, SLAUltrapassadoOS, StatusOS, StatusMobilizacao,
                nmServ, Xcontr, xss
         FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.TQB_Monitoramento`
@@ -96,6 +96,25 @@ def fetch_monitoramento() -> list[dict]:
     """
     rows = _rows(sql)
     log.info("TQB_Monitoramento (abertas): %d linhas", len(rows))
+    return rows
+
+
+def fetch_ss_aguardando() -> list[dict]:
+    """S.S. aguardando abertura de O.S. — medida DAX Quantidade_OS_Aguardando
+    (StatusOS NÃO contém "Aberta").
+
+    Consulta separada de propósito: `fetch_monitoramento` filtra `termino='N'`
+    e essas linhas têm `termino` NULL (a S.S. ainda não virou O.S.), então
+    ficariam de fora. Aqui a tabela é lida sem esse filtro."""
+    sql = f"""
+        SELECT Solici, ordemSTJ, Codbem, DataHoraAbertura, StatusOS, nmServ,
+               Xcontr, Xesper, Xreser, Xbemre, xss
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.TQB_Monitoramento`
+        WHERE StatusOS IS NULL OR NOT CONTAINS_SUBSTR(StatusOS, 'Aberta')
+        LIMIT {config.BQ_MAX_ROWS}
+    """
+    rows = _rows(sql)
+    log.info("TQB_Monitoramento (S.S. aguardando): %d linhas", len(rows))
     return rows
 
 

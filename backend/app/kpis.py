@@ -72,6 +72,13 @@ SERVICO_NOME = {
 # Ordem fixa das barras do bloco "Tipo de serviço"
 TIPO_ORDEM = ["Implementação", "Corretiva", "Sinistro", "Preventiva", "Socorro"]
 
+# Serviços SEM obrigação de prazo (definido pela operação em 22/07/2026): não
+# entram no KPI "O.S. fora do prazo" nem são classificados como tal — aparecem
+# como "Sem prazo". Sinistro depende de terceiros/seguradora e Implementação é
+# preparação de veículo novo, então o SLA da O.S. não se aplica.
+# (A regra de Cláusula contratual já ignorava Implementação por motivo análogo.)
+SERVICOS_SEM_SLA = {"Sinistro", "Implementação"}
+
 # Normalização de nomes vindos da coluna NomeServico (sem acento na fonte)
 NOME_SERVICO_MAP = {
     "CORRETIVA": "Corretiva", "SINISTRO": "Sinistro", "PREVENTIVA": "Preventiva",
@@ -244,8 +251,12 @@ def _mecanicos_efetivo(mec_rows: list[dict] | None) -> dict | None:
 
 
 def _reservas_limite(tti_rows: list[dict] | None,
-                     bem_rows: list[dict] | None) -> int | None:
+                     bem_rows: list[dict] | None) -> list[dict] | None:
     """Reservas no Limite = medida DAX Qtd_Res_Limite (validado =2).
+
+    Devolve os GRUPOS no limite (contrato/ordem/tecnologia + veículos); a medida
+    é o len() da lista. Devolver os grupos — e não só a contagem — é o que
+    alimenta o drill-down do card.
 
     Agrupa TTI_Portaria por (numeroContrato, reserva, statusBem, ordem,
     tecnologia) e conta os grupos que são uma reserva EM USO
@@ -275,13 +286,22 @@ def _reservas_limite(tti_rows: list[dict] | None,
 
     grupos = {(_s(r.get("numeroContrato")), _s(r.get("reserva")), _s(r.get("statusBem")),
                _s(r.get("ordem")), _s(r.get("tecnologia"))) for r in tti_rows}
-    total = 0
-    for contrato, reserva, status, ordem, tec in grupos:
+    no_limite = []
+    for contrato, reserva, status, ordem, tec in sorted(grupos):
         if not (contrato and reserva == "S" and status == "02" and tec and ordem):
             continue
-        if qtd_res_disp(contrato, tec, status) == 0:
-            total += 1
-    return total
+        if qtd_res_disp(contrato, tec, status) != 0:
+            continue
+        veiculos = {_s(r.get("codVei")) for r in tti_rows
+                    if _s(r.get("numeroContrato")) == contrato
+                    and _s(r.get("reserva")) == "S"
+                    and _s(r.get("statusBem")) == status
+                    and _s(r.get("ordem")) == ordem
+                    and _s(r.get("tecnologia")) == tec
+                    and _s(r.get("codVei"))}
+        no_limite.append({"contrato": contrato, "ordem": ordem,
+                          "tecnologia": tec, "veiculos": sorted(veiculos)})
+    return no_limite
 
 
 # Categoria "Pesada" no catálogo TQR (TQR_CATBEM). MAPEAMENTO INFERIDO
@@ -319,13 +339,120 @@ def _placa_nome(bem: str, bem_idx: dict | None) -> tuple[str, str]:
     return placa, nome
 
 
-def _detalhe_de_mon(mon: dict, situacao: str, bem_idx: dict | None = None) -> dict:
+def _contrato_do_bem(bem: str, bem_idx: dict | None) -> str:
+    """Contrato a que o veículo pertence (ST9_CadastroBem.numeroContrato).
+    Confere com o TQB.Xcontr em 100% das ordens abertas; usamos o cadastro do
+    bem por ser o dado do veículo, não da O.S."""
+    return _s(((bem_idx or {}).get(bem) or {}).get("contrato"))
+
+
+def _servico_da_ordem(mon: dict | None, man_por_ordem: dict | None) -> str:
+    """Serviço da ordem, preferindo o STJ à TQB.
+
+    Em 3 ordens abertas as duas fontes divergem (ex.: O.S. 037941 tem
+    servico='000002' e NomeServico='SINISTRO' no STJ, mas nmServ='Preventiva'
+    na TQB). O STJ manda: é ele que carrega o CÓDIGO do serviço. Usar a mesma
+    fonte aqui e na coluna "Tipo" evita a linha dizer um serviço e a situação
+    ser calculada por outro."""
+    row = (man_por_ordem or {}).get(_s((mon or {}).get("ordemSTJ")))
+    if row is not None:
+        return _nome_servico(row)
+    return _nome_servico_mon(mon) if mon else ""
+
+
+def _situacao_real(mon: dict | None, agora: datetime, servico: str = "") -> str:
+    """Situação da linha vinda das COLUNAS da fonte, não de um rótulo fixo por
+    drill-down (o que fazia toda linha de "O.S. abertas" aparecer como 'Aberta').
+
+    Nenhuma coluna de status distingue as ordens abertas entre si — `situacao`
+    do STJ é 'L' em todas e `StatusOS` é 'Aberta' em todas. O que de fato varia
+    é o SLA. Então:
+      - `StatusOS` quando ele diz algo além de "Aberta" (ex.: 'Aguardando
+        Abertura', nas S.S. que ainda não viraram O.S.);
+      - senão, o SLA da O.S. recalculado AO VIVO (agora > SLAVencimentoOS) —
+        a MESMA regra do KPI "O.S. fora do prazo", para o detalhamento bater
+        com o número do card em vez do flag-snapshot SLAUltrapassadoOS;
+      - sem monitoramento, 'Sem SLA'.
+    """
+    if not mon:
+        return "Sem SLA"
+    status = _s(mon.get("StatusOS"))
+    if status and "ABERTA" not in _norm(status):
+        return status
+    if (servico or _nome_servico_mon(mon)) in SERVICOS_SEM_SLA:
+        return "Sem prazo"
+    if _dt_iso(mon.get("SLAVencimentoOS")) is None:
+        return "Sem SLA"
+    return "Fora do Prazo" if _sla_fora(mon, "SLAVencimentoOS", agora) else "No prazo"
+
+
+def _previsao_entrega(row: dict | None, agora: datetime) -> tuple[str, bool]:
+    """Previsão de entrega da O.S. — STJ `dtMpFim` + `horaMpFim` (fim previsto
+    da manutenção). É o único par de datas previstas preenchido na base: os
+    dtPp*/dtPr* vêm vazios, e os dtMr* só são gravados no fechamento.
+
+    `dtMpFim` chega como 'AAAAMMDD' e `horaMpFim` como 'HH:MM'. Devolve
+    (texto formatado, já_venceu) — venceu = previsão no passado com a O.S.
+    ainda aberta."""
+    if not row:
+        return "", False
+    d = _s(row.get("dtMpFim"))
+    if len(d) != 8 or not d.isdigit():
+        return "", False
+    h = _s(row.get("horaMpFim")) or "00:00"
+    try:
+        prev = datetime.strptime(f"{d} {h[:5]}", "%Y%m%d %H:%M").replace(tzinfo=TZ_BR)
+    except ValueError:
+        return "", False
+    return prev.strftime("%d/%m/%Y %H:%M"), prev < agora
+
+
+def _descricao_servico(row: dict) -> str:
+    """Descrição do serviço (STJ `observa`, o TJ_OBSERVA do ERP).
+
+    Texto livre digitado na abertura da O.S.: vem com quebras de linha e corridas
+    de espaço/traço usadas como separador visual no ERP. Aqui só o espaçamento é
+    normalizado — o conteúdo não é editado, e o corte visual fica no frontend."""
+    txt = " ".join(str(row.get("observa") or "").split())
+    return txt.strip(" -")
+
+
+def _reserva_de_mon(mon: dict | None, bem_idx: dict | None) -> tuple[str, str, str]:
+    """Veículo reserva que substitui o que está parado, a partir da TQB:
+    `Xbemre` é o bem da reserva e `Xreser` o pedido de reserva.
+
+    Devolve (placa, nome, situação), com situação em:
+      'designada'  — reserva com veículo definido (Xbemre preenchido)
+      'aguardando' — reserva pedida (Xreser='S') mas ainda sem veículo
+      ''           — nenhuma reserva pedida
+    A distinção importa: 'aguardando' é uma lacuna operacional, não um vazio."""
+    if not mon:
+        return "", "", ""
+    bem = _s(mon.get("Xbemre"))
+    if bem:
+        placa, nome = _placa_nome(bem, bem_idx)
+        return placa, nome, "designada"
+    if _norm(mon.get("Xreser")) == "S":
+        return "", "", "aguardando"
+    return "", "", ""
+
+
+def _detalhe_de_mon(mon: dict, bem_idx: dict | None = None,
+                    man_por_ordem: dict | None = None,
+                    agora: datetime | None = None) -> dict:
     """Linha de drill-down a partir da TQB_Monitoramento (mesmo contrato do
-    frontend que _linha_detalhe, mas com os campos do monitoramento)."""
+    frontend que _linha_detalhe, mas com os campos do monitoramento).
+
+    A previsão de entrega mora no STJ, por isso `man_por_ordem`: sem a ordem
+    correspondente (caso das S.S. que ainda não viraram O.S.) ela sai vazia."""
     ab = _dt_iso(mon.get("DataHoraAbertura"))
     if ab and ab.tzinfo:
         ab = ab.astimezone(TZ_BR)
     placa, nome = _placa_nome(str(mon.get("Codbem") or "").strip(), bem_idx)
+    resPlaca, resNome, resSt = _reserva_de_mon(mon, bem_idx)
+    prevTxt, prevAtraso = _previsao_entrega(
+        (man_por_ordem or {}).get(_s(mon.get("ordemSTJ"))), agora or datetime.now(TZ_BR))
+    servico = _servico_da_ordem(mon, man_por_ordem)
     return {
         "abertura":    _fmt_curta(ab),
         "aberturaIso": ab.isoformat() if ab else None,
@@ -333,16 +460,31 @@ def _detalhe_de_mon(mon: dict, situacao: str, bem_idx: dict | None = None) -> di
         "os":          str(mon.get("ordemSTJ") or "—"),
         "placa":       placa,
         "nome":        nome,
+        "contrato":    _contrato_do_bem(str(mon.get("Codbem") or "").strip(), bem_idx),
+        "reserva":     resPlaca,
+        "reservaNome": resNome,
+        "reservaSt":   resSt,
+        "desc":        "",   # a descrição mora no STJ; estas linhas vêm da TQB
+        "previsao":    prevTxt,
+        "previsaoAtrasada": prevAtraso,
         "mobil":       "Mobilizado" if _mobilizado_mon(mon) else "Não mobilizado",
-        "serv":        _nome_servico_mon(mon),
-        "st":          situacao,
+        "serv":        servico,
+        "st":          _situacao_real(mon, agora or datetime.now(TZ_BR), servico),
     }
 
 
-def _linha_detalhe(row: dict, situacao: str, bem_idx: dict | None = None) -> dict:
-    """Uma linha da tabela de drill-down (contrato do frontend)."""
+def _linha_detalhe(row: dict, bem_idx: dict | None = None,
+                   mon_por_ordem: dict | None = None,
+                   agora: datetime | None = None) -> dict:
+    """Uma linha da tabela de drill-down (contrato do frontend).
+
+    A reserva mora na TQB, não no STJ — por isso `mon_por_ordem`, para achar o
+    monitoramento da mesma ordem. Sem ele, a coluna de reserva sai vazia."""
     ab = _dt_iso(row.get("dtOrigem"))
     placa, nome = _placa_nome(str(row.get("codBem") or "").strip(), bem_idx)
+    mon = (mon_por_ordem or {}).get(_s(row.get("ordem")))
+    resPlaca, resNome, resSt = _reserva_de_mon(mon, bem_idx)
+    prevTxt, prevAtraso = _previsao_entrega(row, agora or datetime.now(TZ_BR))
     return {
         "abertura":    _fmt_curta(ab),
         "aberturaIso": ab.isoformat() if ab else None,
@@ -350,14 +492,53 @@ def _linha_detalhe(row: dict, situacao: str, bem_idx: dict | None = None) -> dic
         "os":          str(row.get("ordem") or "—"),
         "placa":       placa,
         "nome":        nome,
+        "contrato":    _contrato_do_bem(str(row.get("codBem") or "").strip(), bem_idx),
+        "reserva":     resPlaca,
+        "reservaNome": resNome,
+        "reservaSt":   resSt,
+        "desc":        _descricao_servico(row),
+        "previsao":    prevTxt,
+        "previsaoAtrasada": prevAtraso,
         "mobil":       "Mobilizado" if _mobilizado(row) else "Não mobilizado",
         "serv":        _nome_servico(row),
-        "st":          situacao,
+        "st":          _situacao_real(mon, agora or datetime.now(TZ_BR), _nome_servico(row)),
     }
 
 
-def _ordenar_por_abertura(linhas: list[dict]) -> list[dict]:
-    return sorted(linhas, key=lambda r: r["aberturaIso"] or "9999")
+def _detalhes_reserva(grupos: list[dict], man_por_ordem: dict,
+                      bem_idx: dict | None = None,
+                      mon_por_ordem: dict | None = None,
+                      agora: datetime | None = None) -> list[dict]:
+    """Linhas do drill-down de "Reservas no limite". A TTI_Portaria não guarda
+    data de entrada, então a abertura vem da O.S. do grupo (TTI.ordem =
+    STJ_Manutencao.ordem). Sem O.S. correspondente, monta a linha só com o que
+    a portaria sabe — e ela cai no fim da ordenação, por não ter data."""
+    linhas = []
+    for g in grupos:
+        row = man_por_ordem.get(g["ordem"])
+        if row is not None:
+            linhas.append(_linha_detalhe(row, bem_idx, mon_por_ordem, agora))
+            continue
+        bem = g["veiculos"][0] if g["veiculos"] else ""
+        placa, nome = _placa_nome(bem, bem_idx)
+        linhas.append({
+            "abertura": "—", "aberturaIso": None,
+            "ss": "—", "os": g["ordem"] or "—",
+            "placa": placa, "nome": nome, "contrato": _contrato_do_bem(bem, bem_idx),
+            "reserva": "", "reservaNome": "", "reservaSt": "", "desc": "",
+            "previsao": "", "previsaoAtrasada": False,
+            "mobil": "Mobilizado", "serv": "—", "st": "Sem SLA",
+        })
+    return linhas
+
+
+def _ordenar_por_abertura(linhas: list[dict], desc: bool = False) -> list[dict]:
+    """Ordena o drill-down pela data de abertura. desc=True põe a mais recente
+    primeiro. Linhas sem data ficam sempre no fim, nos dois sentidos."""
+    com = [r for r in linhas if r["aberturaIso"]]
+    sem = [r for r in linhas if not r["aberturaIso"]]
+    com.sort(key=lambda r: r["aberturaIso"], reverse=desc)
+    return com + sem
 
 
 # ======================== regras sobre STJ (histórico) =====================
@@ -417,6 +598,7 @@ def build_payload(man_rows: list[dict],
                   prev_rows: list[dict] | None = None,
                   tti_rows: list[dict] | None = None,
                   tqr_rows: list[dict] | None = None,
+                  ss_rows: list[dict] | None = None,
                   agora: datetime | None = None) -> dict:
     """
     Devolve o JSON que o painel consome. As REGRAS seguem as medidas DAX do
@@ -436,15 +618,20 @@ def build_payload(man_rows: list[dict],
     man_por_ordem = {_s(r.get("ordem")): r for r in man_rows if _s(r.get("ordem"))}
     bem_por_cod   = {_s(b.get("bem")): b for b in bem_rows if _s(b.get("bem"))}
     # placa + nome do veículo por bem (para os drill-downs)
-    bem_idx = {_s(b.get("bem")): {"placa": _s(b.get("placa")), "nome": _s(b.get("nome"))}
+    bem_idx = {_s(b.get("bem")): {"placa": _s(b.get("placa")), "nome": _s(b.get("nome")),
+                                  "contrato": _s(b.get("numeroContrato"))}
                for b in bem_rows if _s(b.get("bem"))}
 
     abertas = [r for r in man_rows if _qtd_zero(r)]                 # qtdRep = 0
     abertas_ordens = {_s(r.get("ordem")) for r in abertas if _s(r.get("ordem"))}
 
     # --- OS Fora do Prazo (SLA da OS estourado AO VIVO, sobre as abertas) ----
+    # Sinistro e Implementação não têm obrigação de prazo — ficam fora da conta
+    # (ver SERVICOS_SEM_SLA). Isso desvia de propósito do DAX do manutest, que
+    # contava todos os serviços.
     os_fora = [m for m in mon_rows
                if _s(m.get("ordemSTJ")) in abertas_ordens
+               and _servico_da_ordem(m, man_por_ordem) not in SERVICOS_SEM_SLA
                and _sla_fora(m, "SLAVencimentoOS", agora)]
 
     # --- S.O.S (serviço 000005) ---------------------------------------------
@@ -460,7 +647,13 @@ def build_payload(man_rows: list[dict],
             clientes_bem.add(_s(r.get("codBem")))
 
     # --- S.S. aguardando (TQB: StatusOS não contém "Aberta") ----------------
-    ss_aguardando = [m for m in mon_rows if "ABERTA" not in _norm(m.get("StatusOS"))]
+    # Vem de uma consulta própria (fetch_ss_aguardando): essas linhas têm
+    # termino NULL — a S.S. ainda não virou O.S. — e o mon_rows, filtrado por
+    # termino='N', nunca as traria. Sem a fonte, cai para o filtro sobre mon_rows.
+    if ss_rows is not None:
+        ss_aguardando = list(ss_rows)
+    else:
+        ss_aguardando = [m for m in mon_rows if "ABERTA" not in _norm(m.get("StatusOS"))]
 
     # --- Controle de qualidade (tipoRet = 'A') ------------------------------
     qualidade = [r for r in man_rows if _norm(r.get("tipoRet")) == "A"]
@@ -539,24 +732,32 @@ def build_payload(man_rows: list[dict],
         "disponivel":  config.MECANICOS_DISPONIVEL,
         "pausa":       config.MECANICOS_PAUSA,
     }
-    reserva_limite = _reservas_limite(tti_rows, bem_rows)
-    if reserva_limite is None:
-        reserva_limite = config.KPI_RESERVA_LIMITE_MANUAL
+    # None = sem TTI_Portaria; cai para o valor manual do .env e o drill-down
+    # fica vazio (não há como listar o que não veio da fonte).
+    reserva_grupos = _reservas_limite(tti_rows, bem_rows)
+    if reserva_grupos is None:
+        reserva_limite, reserva_grupos = config.KPI_RESERVA_LIMITE_MANUAL, []
+    else:
+        reserva_limite = len(reserva_grupos)
 
     # --- Drill-downs ---------------------------------------------------------
+    # Bloco 01 (S.S./O.S.): mais recente primeiro, exceto "fora do prazo", onde
+    # a mais antiga é a que precisa de atenção. Bloco 02 (clientes): mais antigo
+    # primeiro — quem espera há mais tempo no topo. Veículos: mais recente.
     detalhes = {
-        "osForaPrazo": _ordenar_por_abertura([_detalhe_de_mon(m, "Fora do Prazo", bem_idx) for m in os_fora]),
-        "osAbertas":   _ordenar_por_abertura([_linha_detalhe(r, "Aberta", bem_idx) for r in abertas]),
-        "sos":         [_linha_detalhe(r, "Crítico", bem_idx) for r in sos],
-        "clausula":    _ordenar_por_abertura([_detalhe_de_mon(m, "Crítico", bem_idx) for m in clausula_rows]),
-        "clientesEsp": _ordenar_por_abertura([_detalhe_de_mon(m, "Aguardando", bem_idx) for m in clientes_rows]),
-        "ssAguardando":_ordenar_por_abertura([_detalhe_de_mon(m, "Aguardando", bem_idx) for m in ss_aguardando]),
-        "qualidade":   [_linha_detalhe(r, "Qualidade", bem_idx) for r in qualidade],
-        "retorno":     [_linha_detalhe(r, "Retorno", bem_idx) for r in retorno],
+        "osForaPrazo": _ordenar_por_abertura([_detalhe_de_mon(m, bem_idx, man_por_ordem, agora) for m in os_fora]),
+        "osAbertas":   _ordenar_por_abertura([_linha_detalhe(r, bem_idx, mon_por_ordem, agora) for r in abertas], desc=True),
+        "sos":         _ordenar_por_abertura([_linha_detalhe(r, bem_idx, mon_por_ordem, agora) for r in sos]),
+        "clausula":    _ordenar_por_abertura([_detalhe_de_mon(m, bem_idx, man_por_ordem, agora) for m in clausula_rows]),
+        "clientesEsp": _ordenar_por_abertura([_detalhe_de_mon(m, bem_idx, man_por_ordem, agora) for m in clientes_rows]),
+        "ssAguardando":_ordenar_por_abertura([_detalhe_de_mon(m, bem_idx, man_por_ordem, agora) for m in ss_aguardando], desc=True),
+        "qualidade":   _ordenar_por_abertura([_linha_detalhe(r, bem_idx, mon_por_ordem, agora) for r in qualidade], desc=True),
+        "retorno":     _ordenar_por_abertura([_linha_detalhe(r, bem_idx, mon_por_ordem, agora) for r in retorno], desc=True),
         "veiculos":    _ordenar_por_abertura([
-            _linha_detalhe(r, "Mobilizado" if _mobilizado(r) else "Não mobilizado", bem_idx)
-            for r in abertas]),
-        "reservaLimite": [],
+            _linha_detalhe(r, bem_idx, mon_por_ordem, agora)
+            for r in abertas], desc=True),
+        "reservaLimite": _ordenar_por_abertura(
+            _detalhes_reserva(reserva_grupos, man_por_ordem, bem_idx, mon_por_ordem, agora)),
     }
 
     return {
