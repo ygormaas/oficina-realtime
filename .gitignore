@@ -17,6 +17,12 @@ __pycache__/
 .venv/
 venv/
 
+# ── Runtime portatil e credenciais (NAO versionar) ──────────
+# Python embutido (~95 MB) gerado localmente; recriavel.
+runtime/
+# Pasta com a chave da service account que viaja com o pacote.
+credenciais/
+
 # ── Diversos ─────────────────────────────────────────────────
 .DS_Store
 *.log

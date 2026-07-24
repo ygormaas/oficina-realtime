@@ -1,0 +1,66 @@
+===============================================================================
+COMO COLOCAR O PAINEL NA MAQUINA DA TV  (copiar-colar, sem instalar nada)
+Central de Inteligencia - Resumo Oficina (MAAS)
+===============================================================================
+
+A pasta e AUTOSSUFICIENTE: ja traz o Python portatil embutido (runtime\) e
+todas as bibliotecas. Nao precisa instalar Python nem nada na maquina de
+destino. So o Microsoft Edge (que ja vem no Windows) e usado para a tela.
+
+
+-------------------------------------------------------------------------------
+PASSO 1 - Colocar a credencial (uma vez, nesta maquina)
+-------------------------------------------------------------------------------
+Copie a chave da service account para a pasta credenciais\ com o nome exato
+service-account-key.json. No PowerShell:
+
+    Copy-Item "C:\Users\ygor.kouzak\Downloads\Projetos\Google Big Query\service-account-key.json" `
+      "<PASTA-DO-PROJETO>\credenciais\service-account-key.json"
+
+(Ver credenciais\LEIA-ME.txt.)
+
+
+-------------------------------------------------------------------------------
+PASSO 2 - Testar aqui
+-------------------------------------------------------------------------------
+Duplo-clique em  iniciar-painel-tv.bat
+Deve abrir uma janela preta (o servidor) e, em ~10s, o Edge em tela cheia
+com o painel. Para sair do modo tela cheia: Alt+F4.
+
+
+-------------------------------------------------------------------------------
+PASSO 3 - Copiar para a maquina da TV
+-------------------------------------------------------------------------------
+1. Copie a pasta INTEIRA do projeto para um caminho LOCAL na maquina da TV
+   (NAO use OneDrive/Drive la). Recomendado:  C:\oficina-painel\
+   - Pode apagar a pasta backend\.venv na copia (nao e usada; economiza espaco).
+   - A pasta runtime\ e a credenciais\ DEVEM ir junto.
+2. Na maquina da TV, rode UMA vez o  criar-atalho.bat  (duplo-clique).
+   Ele cria o atalho "Painel da Oficina" na Area de Trabalho apontando para
+   o caminho local correto.
+3. Use o atalho "Painel da Oficina" para abrir. Pronto.
+
+   ATENCAO: NAO copie o iniciar-painel-tv.bat sozinho para a Area de Trabalho.
+   Ele precisa ficar na pasta, junto com runtime\, backend\ e credenciais\.
+   Para clicar pela Area de Trabalho, use sempre o ATALHO (passo 2).
+
+Requisitos da maquina de destino:
+   - Windows 64 bits.
+   - Acesso de rede ao Google BigQuery (*.googleapis.com : 443).
+   - Microsoft Edge instalado (padrao no Windows 10/11).
+
+
+-------------------------------------------------------------------------------
+PASSO 4 - Ligar sozinho no boot (opcional, via TI)
+-------------------------------------------------------------------------------
+Ver PARA-TI.txt: pedir a TI o allowlist no SentinelOne e, se quiserem,
+configurar o auto-inicio pelo Agendador de Tarefas / Intune.
+
+
+-------------------------------------------------------------------------------
+DICAS
+-------------------------------------------------------------------------------
+- Trocar o intervalo de atualizacao: backend\.env, POLL_SECONDS (segundos).
+- Ver se esta no ar sem abrir a TV: http://127.0.0.1:8000/healthz
+- A janela preta do servidor precisa ficar aberta enquanto o painel roda.
+===============================================================================

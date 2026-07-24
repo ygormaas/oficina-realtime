@@ -1,0 +1,79 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║         PAINEL DA OFICINA NA TV  —  GUIA RAPIDO (passo a passo)             ║
+║         Central de Inteligencia - Resumo Oficina (MAAS)                     ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+Este guia e para quem vai LIGAR e OPERAR o painel no dia a dia.
+Nao precisa saber nada de programacao. So seguir os passos.
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  PARA LIGAR O PAINEL                                                         │
+└────────────────────────────────────────────────────────────────────────────┘
+
+  1) Ligue o computador que fica atras da TV e faca login normalmente.
+
+  2) Na Area de Trabalho, procure o atalho com o nome:
+
+              Painel da Oficina
+
+     De DOIS CLIQUES nele.
+     (IMPORTANTE: use este ATALHO. Nao copie o arquivo .bat para a Area de
+      Trabalho - se copiar so o arquivo, ele nao acha os componentes e da erro
+      de "Credencial nao encontrada".)
+
+  3) Vai abrir uma JANELA PRETA com textos. Isso e NORMAL - e o "motor" do
+     painel funcionando.  >>> NAO FECHE essa janela preta. <<<
+     (Se fechar, o painel para.)
+
+  4) Aguarde cerca de 10 segundos. A tela da TV vai abrir sozinha em TELA
+     CHEIA, mostrando os indicadores da oficina. Pronto!
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  COMO SABER SE ESTA FUNCIONANDO                                             │
+└────────────────────────────────────────────────────────────────────────────┘
+
+  - No canto do painel ha um indicador:
+       * BOLINHA VERDE / "ao vivo"  =  tudo certo, atualizando sozinho.
+       * "sem conexao - reconectando..."  =  ele esta tentando voltar sozinho.
+         Espere ate 1 minuto. Se nao voltar, veja "SE DER PROBLEMA" abaixo.
+
+  - Os numeros se atualizam sozinhos a cada 5 minutos. Nao precisa mexer.
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  PARA DESLIGAR / SAIR DA TELA CHEIA                                         │
+└────────────────────────────────────────────────────────────────────────────┘
+
+  - Para SAIR da tela cheia:  aperte as teclas  ALT + F4  (juntas).
+  - Para DESLIGAR de vez:  feche tambem a janela preta do "motor".
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  SE DER PROBLEMA (tela em branco, "sem conexao" que nao volta, etc.)        │
+└────────────────────────────────────────────────────────────────────────────┘
+
+  Receita que resolve quase tudo - "desligar e ligar de novo":
+
+  1) Feche a janela preta do "motor" (clique no X dela).
+  2) Feche a TV com ALT + F4, se ainda estiver aberta.
+  3) De DOIS CLIQUES de novo em  iniciar-painel-tv  e aguarde os 10 segundos.
+
+  Se mesmo assim nao voltar:
+  - Verifique se o computador tem internet.
+  - Chame o responsavel:  Ygor Kouzak  (ygor.kouzak@maasservicos.com.br)
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  O QUE NUNCA FAZER                                                          │
+└────────────────────────────────────────────────────────────────────────────┘
+
+  X  Nao feche a janela preta enquanto o painel estiver em uso.
+  X  Nao apague nenhum arquivo da pasta do painel.
+  X  Nao renomeie a pasta nem os arquivos.
+
+═══════════════════════════════════════════════════════════════════════════════
+ Dica p/ o tecnico: para checar sem a TV, abra no navegador
+ http://127.0.0.1:8000/healthz  -> deve mostrar  {"ok":true,...}
+═══════════════════════════════════════════════════════════════════════════════

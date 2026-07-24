@@ -11,7 +11,8 @@ calcula os KPIs e empurra o JSON por WebSocket para as telas abertas.
 
 ```
 BigQuery (dataset silver): STJ_Manutencao, TQB_Monitoramento, ST9_CadastroBem,
-                           SRA_SRJ_Funcionarios, STF_Status_Manutencao, TTI_Portaria
+                           SRA_SRJ_Funcionarios, STF_Status_Manutencao, TQR
+                           (TTI_Portaria APOSENTADA — feed parou em 07/04/2026)
    → backend/app/bq.py        (consultas — passo "Fonte")
    → backend/app/kpis.py      (modelagem/regras — as "medidas DAX")
    → backend/app/main.py      (FastAPI: polling + WebSocket /ws + estáticos)
@@ -45,26 +46,37 @@ Fontes alternáveis por `DATA_SOURCE` no `backend/.env`:
 
 ## Fatos do schema (regras DAX do manutest.vpax, validadas em 21/07/2026)
 
-- **Ordem ABERTA = `STJ_Manutencao[qtdRep] = 0`** (filtro-mestre do painel).
-  A heurística antiga `situacao≠'C' e termino='N'` NÃO é o critério correto.
+- **Ordem ABERTA = `termino='N'` e `situacao≠'C'`; cada O.S. conta** (ver
+  `_abertas_os` em `kpis.py`). DESVIA do `qtdRep=0` do manutest: aquele filtro
+  escondia O.S. reprovadas (qtdRep>0) ainda abertas — 4 sumiam em 23/07/2026. Uma
+  solicitação pode ter mais de uma O.S. aberta (ex.: S.S. 032169 → O.S. 038144 e
+  038145) e a operação conta como 2 O.S. (definido em 23/07/2026), então NÃO
+  deduplicamos por solicitação. Resultado: 61 O.S. (vs 56 com qtdRep=0).
+- **Abertura da O.S. = entrada da S.S.** (`TQB_Monitoramento.DtAbertura`+`Hoaber`,
+  data+hora LOCAL), NÃO o `dtOrigem` da O.S. (data em que a O.S. foi recortada, que
+  muda em reprovação e vem sem hora). `DataHoraAbertura` guarda hora local rotulada
+  como UTC — NÃO converter fuso (atrasa 3h). Ver `_abertura_ss`.
 - Serviço: 000001 Corretiva · 000002 Sinistro · 000003 Preventiva ·
   000004 Implementação · 000005 Socorro.
 - `codBem` é o veículo; `ST9_CadastroBem.placa` traz a placa (join
   `TQB_Monitoramento.Codbem = ST9_CadastroBem.bem`).
 - Junções: `STJ_Manutencao.ordem = TQB_Monitoramento.ordemSTJ`;
   `TQB_Monitoramento.Codbem = ST9_CadastroBem.bem`;
-  `TTI_Portaria.codVei = ST9_CadastroBem.bem`.
+  reserva no limite: `TQB_Monitoramento.Xbemre = ST9_CadastroBem.bem`.
+- **Status do bem** (`ST9_CadastroBem.statusBem`): 01 Locado · **02 Reserva** ·
+  03 Serviços · 04 Disponível · 05 Negociado · 06 Venda · 07 Vendido ·
+  08 Em Adequação · 10 Aguardando Demanda · 12 Distratado.
 
 ### Fonte/regra de cada KPI (medidas DAX reproduzidas em `kpis.py`)
 
-- **OS Abertas** = COUNT ordem, `qtdRep=0`.
+- **OS Abertas** = COUNT ordem abertas (`termino='N'` e `situacao≠'C'`, cada O.S.
+  conta — ver acima; não é mais `qtdRep=0`).
 - **OS Fora do Prazo** = `agora > SLAVencimentoOS` (recalculado AO VIVO a cada ciclo,
-  não usa o flag snapshot `SLAUltrapassadoOS`) + ordemSTJ<>"" + qtdRep=0
-  **+ serviço ∉ {Sinistro, Implementação}**. Esses dois não têm obrigação de prazo
-  (definido pela operação em 22/07/2026) e aparecem como "Sem prazo" no
-  detalhamento — ver `SERVICOS_SEM_SLA` em `kpis.py`. **Desvia de propósito do
-  DAX do manutest**, que contava todos os serviços: no ciclo em que a regra
-  entrou, o card caiu de 49 para 14.
+  não usa o flag snapshot `SLAUltrapassadoOS`) + O.S. aberta
+  **+ serviço ∉ {Implementação}**. Só Implementação não tem obrigação de prazo e
+  aparece como "Sem prazo" no detalhamento — ver `SERVICOS_SEM_SLA` em `kpis.py`.
+  **Sinistro ENTRA no cálculo** (desde 23/07/2026; antes ficava de fora junto com
+  Implementação). Ainda desvia do DAX do manutest, que contava todos os serviços.
 - O serviço de uma ordem vem do **STJ** (`NomeServico`/`servico`), não do
   `nmServ` da TQB: em ~3 ordens abertas as fontes divergem e só o STJ tem o
   código do serviço. Usar a mesma fonte na coluna "Tipo" e na regra de SLA
@@ -82,8 +94,14 @@ Fontes alternáveis por `DATA_SOURCE` no `backend/.env`:
   (Disponível/Trabalhando/Intervalo).
 - **Preventivas** = DISTINCTCOUNT `STF_Status_Manutencao.codBem` por `statusManutencao`
   (Atrasado / Período Final / Período Inicial).
-- **Reservas no Limite** = medida `Qtd_Res_Limite` sobre `TTI_Portaria` (grupos de
-  reserva em uso sem reserva disponível do mesmo contrato+tecnologia).
+- **Reservas no Limite** = medida `Qtd_Res_Limite` (validado =2 em 23/07/2026).
+  Frota de reserva é por **contrato+lote**. Estoque = `ST9_CadastroBem` com
+  `statusBem='02'` (Reserva) por `numeroContrato`+`numeroLote`; "em uso" = reserva
+  (02) que é `Xbemre` de uma O.S. aberta (`TQB_Monitoramento`, `termino='N'`);
+  NO LIMITE = grupos com em uso ≥ 1 e estoque − em uso ≤ 0. O reserva continua 02
+  enquanto substitui; só baixa por sinistro (o cadastro muda o status).
+  **APOSENTOU a `TTI_Portaria`** (portaria): a `raw.TTI` parou em 07/04/2026 e o
+  `codVei2` de lá congelou. Ver `_reservas_limite` em `kpis.py`.
 
 ## Como rodar e testar
 

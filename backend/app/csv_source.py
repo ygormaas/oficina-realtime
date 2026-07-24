@@ -62,9 +62,5 @@ def fetch_preventivas() -> list[dict]:
     return _opcional("STF_Status_Manutencao.csv", "preventivas")
 
 
-def fetch_reservas_portaria() -> list[dict]:
-    return _opcional("TTI_Portaria.csv", "reservas no limite")
-
-
 def fetch_tqr() -> list[dict]:
     return _opcional("TQR.csv", "tipo de veículo (Pesada/Leve)")

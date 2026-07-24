@@ -47,12 +47,13 @@ async def _calcular_payload() -> dict:
     bem  = await asyncio.to_thread(fonte.fetch_cadastro_bem)
     mec  = await asyncio.to_thread(fonte.fetch_mecanicos)
     prev = await asyncio.to_thread(fonte.fetch_preventivas)
-    tti  = await asyncio.to_thread(fonte.fetch_reservas_portaria)
     tqr  = await asyncio.to_thread(fonte.fetch_tqr)
     ss   = await asyncio.to_thread(fonte.fetch_ss_aguardando)
+    # "Reservas no Limite" sai de bem_rows (estoque 02 por contrato+lote) +
+    # mon_rows (Xbemre em uso) — não há mais consulta de portaria. Ver kpis.py.
     return kpis.build_payload(man, mon_rows=mon, bem_rows=bem,
                               mecanicos_rows=mec, prev_rows=prev,
-                              tti_rows=tti, tqr_rows=tqr, ss_rows=ss)
+                              tqr_rows=tqr, ss_rows=ss)
 
 
 async def _broadcast(payload: dict) -> None:

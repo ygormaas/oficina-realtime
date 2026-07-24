@@ -86,8 +86,8 @@ def fetch_monitoramento() -> list[dict]:
     Traz os campos das regras de SLA/cláusula/aguardando (SLAUltrapassadoOS/CC,
     StatusOS, nmServ, Xcontr, xss, key_filial_solici) — ver kpis.py."""
     sql = f"""
-        SELECT ordemSTJ, Ordem, Solici, Codbem, DataHoraAbertura, key_filial_solici,
-               Xesper, Xreser, Xbemre, SLAVencimentoOS, SLAVencimentoCC,
+        SELECT ordemSTJ, Ordem, Solici, Codbem, DataHoraAbertura, DtAbertura, Hoaber,
+               key_filial_solici, Xesper, Xreser, Xbemre, SLAVencimentoOS, SLAVencimentoCC,
                SLAUltrapassadoCC, SLAUltrapassadoOS, StatusOS, StatusMobilizacao,
                nmServ, Xcontr, xss
         FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.TQB_Monitoramento`
@@ -107,8 +107,8 @@ def fetch_ss_aguardando() -> list[dict]:
     e essas linhas têm `termino` NULL (a S.S. ainda não virou O.S.), então
     ficariam de fora. Aqui a tabela é lida sem esse filtro."""
     sql = f"""
-        SELECT Solici, ordemSTJ, Codbem, DataHoraAbertura, StatusOS, nmServ,
-               Xcontr, Xesper, Xreser, Xbemre, xss
+        SELECT Solici, ordemSTJ, Codbem, DataHoraAbertura, DtAbertura, Hoaber,
+               StatusOS, nmServ, Xcontr, Xesper, Xreser, Xbemre, xss
         FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.TQB_Monitoramento`
         WHERE StatusOS IS NULL OR NOT CONTAINS_SUBSTR(StatusOS, 'Aberta')
         LIMIT {config.BQ_MAX_ROWS}
@@ -119,11 +119,13 @@ def fetch_ss_aguardando() -> list[dict]:
 
 
 def fetch_cadastro_bem() -> list[dict]:
-    """Cadastro de bens (ST9_CadastroBem) — dá o contrato e o status do bem
-    de cada veículo. A CLÁUSULA CONTRATUAL usa numeroContrato/statusBem daqui
-    (join TQB_Monitoramento.Codbem = ST9_CadastroBem.bem). Ver kpis.py."""
+    """Cadastro de bens (ST9_CadastroBem) — dá o contrato, o lote e o status do
+    bem de cada veículo. A CLÁUSULA CONTRATUAL usa numeroContrato/statusBem daqui
+    (join TQB_Monitoramento.Codbem = ST9_CadastroBem.bem); RESERVAS NO LIMITE usa
+    statusBem='02' (Reserva) + numeroContrato + numeroLote para o estoque de
+    reserva por lote. Ver kpis.py."""
     sql = f"""
-        SELECT bem, numeroContrato, statusBem, tecnologia, placa, nome
+        SELECT bem, numeroContrato, numeroLote, statusBem, tecnologia, placa, nome
         FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.ST9_CadastroBem`
         LIMIT {config.BQ_MAX_ROWS}
     """
@@ -159,18 +161,11 @@ def fetch_preventivas() -> list[dict]:
     return rows
 
 
-def fetch_reservas_portaria() -> list[dict]:
-    """Movimentos de portaria (TTI_Portaria) — base do KPI "Reservas no
-    Limite" (medida Qtd_Res_Limite). Join codVei = ST9_CadastroBem.bem.
-    Ver kpis.py."""
-    sql = f"""
-        SELECT numeroContrato, reserva, statusBem, ordem, tecnologia, codVei, dtSai
-        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.TTI_Portaria`
-        LIMIT {config.BQ_MAX_ROWS}
-    """
-    rows = _rows(sql)
-    log.info("TTI_Portaria: %d linhas", len(rows))
-    return rows
+# NOTA: "Reservas no Limite" NÃO usa mais a TTI_Portaria (portaria). O feed da
+# raw.TTI parou em 07/04/2026 e o veículo reserva agora vem do Xbemre nativo da
+# TQB_Monitoramento; o estoque de reserva vem do ST9_CadastroBem (statusBem='02'
+# por contrato+lote). Por isso não há mais fetch_reservas_portaria — o KPI é
+# calculado em kpis._reservas_limite(mon_rows, bem_rows). Ver kpis.py.
 
 
 def fetch_tqr() -> list[dict]:

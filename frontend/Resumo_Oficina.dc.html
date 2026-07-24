@@ -347,42 +347,40 @@
 
         <!-- Barra de filtros: serviço, situação e período -->
         <div style="display:flex;flex-direction:column;gap:9px;padding:13px 32px;border-bottom:1px solid var(--border-subtle);flex:none;background:var(--surface-card);">
-          <!-- Uma linha por grupo de filtro: serviço · situação · contrato · abertura -->
+          <!-- Linha 1: Serviço + Situação · Linha 2: Abertura + Previsão · Linha 3: Contrato -->
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;width:64px;">Serviço</span>
           <sc-for list="{{ servChips }}" as="c" hint-placeholder-count="4">
             <span onClick="{{ c.onToggle }}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:var(--radius-pill);border:1.5px solid {{ c.bd }};background:{{ c.bg }};cursor:pointer;white-space:nowrap;" style-hover="border-color:{{ c.cor }};">
               <span style="width:8px;height:8px;border-radius:50%;background:{{ c.cor }};flex:none;"></span>
-              <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>
-              <span class="mono" style="font-size:12px;font-weight:700;color:var(--maas-petroleo-45);">{{ c.n }}</span>
-            </span>
+              <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>            </span>
           </sc-for>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;width:64px;">Situação</span>
+          <span style="width:3px;height:30px;background:#79a4af;border-radius:2px;flex:none;margin:0 10px;"></span>
+          <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;">Situação</span>
           <sc-for list="{{ sitChips }}" as="c" hint-placeholder-count="2">
             <span onClick="{{ c.onToggle }}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:var(--radius-pill);border:1.5px solid {{ c.bd }};background:{{ c.bg }};cursor:pointer;white-space:nowrap;" style-hover="border-color:{{ c.cor }};">
               <span style="width:8px;height:8px;border-radius:50%;background:{{ c.cor }};flex:none;"></span>
-              <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>
-              <span class="mono" style="font-size:12px;font-weight:700;color:var(--maas-petroleo-45);">{{ c.n }}</span>
-            </span>
+              <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>            </span>
           </sc-for>
-          <span style="width:1px;height:22px;background:var(--border-subtle);flex:none;margin:0 6px;"></span>
-          <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;">Abertura</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;width:64px;">Abertura</span>
           <sc-for list="{{ perChips }}" as="c" hint-placeholder-count="3">
             <span onClick="{{ c.onToggle }}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:var(--radius-pill);border:1.5px solid {{ c.bd }};background:{{ c.bg }};cursor:pointer;white-space:nowrap;" style-hover="border-color:{{ c.cor }};">
-              <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>
-              <span class="mono" style="font-size:12px;font-weight:700;color:var(--maas-petroleo-45);">{{ c.n }}</span>
-            </span>
+              <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>            </span>
+          </sc-for>
+          <span style="width:3px;height:30px;background:#79a4af;border-radius:2px;flex:none;margin:0 10px;"></span>
+          <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;">Previsão</span>
+          <sc-for list="{{ prevChips }}" as="c" hint-placeholder-count="4">
+            <span onClick="{{ c.onToggle }}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:var(--radius-pill);border:1.5px solid {{ c.bd }};background:{{ c.bg }};cursor:pointer;white-space:nowrap;" style-hover="border-color:{{ c.cor }};">
+              <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>            </span>
           </sc-for>
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;width:64px;">Contrato</span>
           <sc-for list="{{ ctrChips }}" as="c" hint-placeholder-count="3">
             <span onClick="{{ c.onToggle }}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:var(--radius-pill);border:1.5px solid {{ c.bd }};background:{{ c.bg }};cursor:pointer;white-space:nowrap;" style-hover="border-color:{{ c.cor }};">
-              <span class="mono" style="font-size:12.5px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>
-              <span class="mono" style="font-size:12px;font-weight:700;color:var(--maas-petroleo-45);">{{ c.n }}</span>
-            </span>
+              <span class="mono" style="font-size:12.5px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>            </span>
           </sc-for>
           <sc-if value="{{ temFiltro }}">
             <span onClick="{{ limparFiltros }}" role="button" tabindex="0" class="sans" style="margin-left:auto;font-size:13px;font-weight:700;color:var(--maas-verde-escuro-2);cursor:pointer;white-space:nowrap;" style-hover="opacity:.7;">Limpar filtros</span>
@@ -406,24 +404,28 @@
             </div>
           </sc-if>
           <sc-if value="{{ hasDetailRows }}" hint-placeholder-val="{{ true }}">
-            <div style="display:grid;grid-template-columns:118px 70px 70px minmax(190px,1fr) 92px minmax(150px,.75fr) 140px 122px 124px;column-gap:11px;min-width:0;padding:14px 28px;border-left:4px solid transparent;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
-              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Abertura</span>
+            <div style="display:grid;grid-template-columns:{{ gridCols }};column-gap:11px;min-width:0;padding:14px 28px;border-left:4px solid transparent;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Solic.</span>
+              <sc-if value="{{ naoEhVeiculos }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Abertura</span></sc-if>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Ordem</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Veículo &amp; serviço</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Contrato</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Reserva</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Tipo</span>
-              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Situação</span>
-              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Previsão</span>
+              <sc-if value="{{ naoEhVeiculos }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Situação</span></sc-if>
+              <sc-if value="{{ naoEhVeiculos }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Previsão</span></sc-if>
+              <sc-if value="{{ ehVeiculos }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Mobilização</span></sc-if>
+              <sc-if value="{{ ehVeiculos }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Local</span></sc-if>
             </div>
             <sc-for list="{{ detailRows }}" as="r" hint-placeholder-count="6">
-              <div style="display:grid;grid-template-columns:118px 70px 70px minmax(190px,1fr) 92px minmax(150px,.75fr) 140px 122px 124px;column-gap:11px;min-width:0;padding:15px 28px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.ssBar }};align-items:center;font-variant-numeric:tabular-nums;" style-hover="background:var(--surface-sunken);">
+              <div style="display:grid;grid-template-columns:{{ r.gridCols }};column-gap:11px;min-width:0;padding:15px 28px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.ssBar }};align-items:center;font-variant-numeric:tabular-nums;" style-hover="background:var(--surface-sunken);">
+                <span class="mono" style="font-size:14px;font-weight:{{ r.ssWeight }};color:{{ r.ssFg }};">{{ r.ss }}</span>
+                <sc-if value="{{ r.naoEhVeiculos }}" hint-placeholder-val="{{ true }}">
                 <span style="display:flex;flex-direction:column;gap:1px;">
                   <span class="mono" style="font-size:13px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;">{{ r.dataDia }}</span>
                   <span class="mono" style="font-size:11.5px;color:var(--maas-petroleo-45);">{{ r.dataHora }}</span>
                 </span>
-                <span class="mono" style="font-size:14px;font-weight:{{ r.ssWeight }};color:{{ r.ssFg }};">{{ r.ss }}</span>
+                </sc-if>
                 <span class="mono" style="font-size:14px;font-weight:700;color:var(--maas-petroleo);">{{ r.os }}</span>
                 <span style="display:flex;align-items:baseline;gap:9px;min-width:0;">
                   <span class="mono" style="font-size:14.5px;font-weight:700;color:var(--maas-petroleo);flex:none;">{{ r.placa }}</span>
@@ -438,7 +440,8 @@
                   <sc-if value="{{ r.semReserva }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
                 </span>
                 <span><span class="sans" style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:var(--radius-pill);background:var(--surface-sunken);font-size:12.5px;font-weight:600;color:var(--maas-petroleo);white-space:nowrap;"><span style="width:7px;height:7px;border-radius:50%;background:{{ r.servCor }};flex:none;"></span>{{ r.serv }}</span></span>
-                <span><span class="sans" style="display:inline-block;padding:5px 13px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:600;color:{{ r.stStyle.fg }};background:{{ r.stStyle.bg }};border:1.5px solid {{ r.stStyle.bd }};white-space:nowrap;">{{ r.st }}</span></span>
+                <sc-if value="{{ r.naoEhVeiculos }}"><span><span class="sans" style="display:inline-block;padding:5px 13px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:600;color:{{ r.stStyle.fg }};background:{{ r.stStyle.bg }};border:1.5px solid {{ r.stStyle.bd }};white-space:nowrap;">{{ r.st }}</span></span></sc-if>
+                <sc-if value="{{ r.naoEhVeiculos }}">
                 <span style="display:flex;flex-direction:column;gap:1px;min-width:0;">
                   <sc-if value="{{ r.temPrevisao }}" hint-placeholder-val="{{ true }}">
                     <span class="mono" style="font-size:12.5px;font-weight:700;color:{{ r.previsaoCor }};white-space:nowrap;">{{ r.previsaoDia }}</span>
@@ -446,6 +449,13 @@
                   </sc-if>
                   <sc-if value="{{ r.semPrevisao }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
                 </span>
+                </sc-if>
+                <sc-if value="{{ r.ehVeiculos }}">
+                <span class="sans" style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--maas-petroleo);white-space:nowrap;"><span style="width:8px;height:8px;border-radius:50%;background:{{ r.mobilCor }};flex:none;"></span>{{ r.mobil }}</span>
+                </sc-if>
+                <sc-if value="{{ r.ehVeiculos }}">
+                <span class="sans" style="font-size:13px;font-weight:700;color:{{ r.localCor }};white-space:nowrap;">{{ r.localTxt }}</span>
+                </sc-if>
                 <sc-if value="{{ r.temDesc }}">
                   <span class="sans" style="grid-column:1/-1;margin-top:7px;font-size:12.5px;line-height:1.45;color:var(--maas-petroleo-60);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;" title="{{ r.desc }}">{{ r.desc }}</span>
                 </sc-if>
@@ -490,12 +500,12 @@ class Component extends DCLogic {
   // "fantasma" deslocado em janelas menores que 1920×1080.
   state = { clock: '', scale: FIT_SCALE(), detailId: null, data: null, conn: 'connecting',
             // Filtros do drill-down. q = busca livre (S.S., O.S., placa, modelo,
-            // descrição, data); serv/sit/per = facetas. Zerados a cada abertura.
-            filtro: { q: '', serv: '', sit: '', per: '', ctr: '' } };
+            // descrição, data); serv/sit/per/prev/ctr = facetas. Zerados a cada abertura.
+            filtro: { q: '', serv: '', sit: '', per: '', prev: '', ctr: '' } };
 
   // Abrir/fechar o detalhamento sempre por aqui, para os filtros não vazarem
   // de um KPI para o outro.
-  abrirDetalhe(id) { this.setState({ detailId: id, filtro: { q:'', serv:'', sit:'', per:'', ctr:'' } }); }
+  abrirDetalhe(id) { this.setState({ detailId: id, filtro: { q:'', serv:'', sit:'', per:'', prev:'', ctr:'' } }); }
 
   componentDidMount() {
     this.tick();
@@ -813,6 +823,13 @@ class Component extends DCLogic {
     Object.keys(firstSeen).sort((a, b) => firstSeen[a] - firstSeen[b]).forEach(ss => {
       if (ssCount[ss] > 1) { ssColor[ss] = palette[ci % palette.length]; ci++; }
     });
+    // "Veículos em atendimento" tem colunas próprias: sem Abertura/Situação/
+    // Previsão, com Mobilização e Local (interna/externa). Os demais mantêm o
+    // conjunto padrão. gridCols acompanha (8 colunas x 9).
+    const ehVeic = id === 'veiculos';
+    const GRID_STD  = '76px 118px 70px minmax(190px,1fr) 92px minmax(150px,.75fr) 140px 122px 124px';
+    const GRID_VEIC = '76px 70px minmax(190px,1fr) 92px minmax(150px,.75fr) 140px 150px 120px';
+    const gridCols = ehVeic ? GRID_VEIC : GRID_STD;
     const todas = raw.slice()
       .sort((a, b) => (firstSeen[a.ss] - firstSeen[b.ss]))   // mesma S.S. lado a lado
       .map(r => {
@@ -825,6 +842,11 @@ class Component extends DCLogic {
                  semReserva: !r.reserva,
                  // Descrição do serviço: só no detalhamento de O.S. abertas.
                  temDesc: id === 'osAbertas' && !!r.desc,
+                 ehVeiculos: ehVeic, naoEhVeiculos: !ehVeic, gridCols,
+                 // Mobilização e Local (só aparecem no detalhamento de veículos)
+                 mobilCor: r.mobil === 'Mobilizado' ? 'var(--maas-verde)' : 'var(--maas-petroleo-45)',
+                 localTxt: r.local || '—',
+                 localCor: (r.local === 'Externo') ? 'var(--maas-laranja)' : 'var(--maas-petroleo-60)',
                  ssBar: g ? ssColor[r.ss] : 'transparent',
                  ssFg: g ? ssColor[r.ss] : 'var(--maas-petroleo-60)',
                  servCor: SERV_COR(r.serv),
@@ -843,7 +865,7 @@ class Component extends DCLogic {
       });
 
     // ---- Filtros -----------------------------------------------------------
-    const f = this.state.filtro || { q:'', serv:'', sit:'', per:'', ctr:'' };
+    const f = this.state.filtro || { q:'', serv:'', sit:'', per:'', prev:'', ctr:'' };
     const alvo = (r) => [r.ss, r.os, r.placa, r.nome, r.desc, r.abertura, r.serv, r.st, r.contrato]
       .join(' ').toLowerCase();
     const q = f.q.trim().toLowerCase();
@@ -857,12 +879,29 @@ class Component extends DCLogic {
       if (d === null) return false;          // sem data não entra em recorte de data
       return f.per === 'hoje' ? d <= 0 : f.per === '7' ? d <= 7 : d <= 30;
     };
+    // Previsão de entrega: dias ATÉ a data prevista (negativo = já passou).
+    // A string vem "DD/MM/AAAA HH:MM" (sem ISO no payload), então parseia aqui.
+    const diasAte = (r) => {
+      if (!r.previsao) return null;
+      const [dia, hora] = r.previsao.split(' ');
+      const [d, m, y] = (dia || '').split('/').map(Number);
+      if (!d || !m || !y) return null;
+      const [hh, mm] = (hora || '00:00').split(':').map(Number);
+      return Math.floor((new Date(y, m - 1, d, hh || 0, mm || 0) - Date.now()) / 86400000);
+    };
+    const casaPrevisao = (r, v) => {
+      if (v === 'atrasada') return !!r.previsaoAtrasada;
+      const d = diasAte(r);
+      if (d === null) return false;
+      return v === 'hoje' ? d === 0 : v === '7' ? (d >= 0 && d <= 7) : (d >= 0 && d <= 30);
+    };
+    const passaPrevisao = (r) => !f.prev || casaPrevisao(r, f.prev);
     const rows = todas.filter(r =>
       (!q || alvo(r).includes(q)) &&
       (!f.serv || r.serv === f.serv) &&
       (!f.sit  || r.st   === f.sit) &&
       (!f.ctr  || (r.contrato || '—') === f.ctr) &&
-      passaPeriodo(r));
+      passaPeriodo(r) && passaPrevisao(r));
 
     // Contagens das facetas sobre o conjunto inteiro (como na referência).
     const conta = (campo) => {
@@ -887,8 +926,12 @@ class Component extends DCLogic {
     const perChips = [['hoje','Hoje'],['7','7 dias'],['30','30 dias']].map(([v, rot]) =>
       mkChip(rot, todas.filter(r => { const d = diasDe(r); return d !== null && (v==='hoje'? d<=0 : v==='7'? d<=7 : d<=30); }).length,
              f.per === v, 'var(--maas-petroleo)', () => setF({ per: f.per === v ? '' : v })));
+    const prevChips = [['atrasada','Atrasada'],['hoje','Hoje'],['7','7 dias'],['30','30 dias']].map(([v, rot]) =>
+      mkChip(rot, todas.filter(r => casaPrevisao(r, v)).length,
+             f.prev === v, v === 'atrasada' ? '#B83A32' : 'var(--maas-petroleo)',
+             () => setF({ prev: f.prev === v ? '' : v })));
 
-    const temFiltro = !!(q || f.serv || f.sit || f.per || f.ctr);
+    const temFiltro = !!(q || f.serv || f.sit || f.per || f.prev || f.ctr);
     return {
       detailOpen: true,
       detailTitle: meta.title,
@@ -902,9 +945,10 @@ class Component extends DCLogic {
       vazioPorFiltro: todas.length > 0 && rows.length === 0,
       filtroQ: f.q,
       onBuscar: (e) => setF({ q: e && e.target ? e.target.value : '' }),
-      servChips, sitChips, perChips, ctrChips, temFiltro,
-      limparFiltros: () => this.setState({ filtro: { q:'', serv:'', sit:'', per:'', ctr:'' } }),
+      servChips, sitChips, perChips, prevChips, ctrChips, temFiltro,
+      limparFiltros: () => this.setState({ filtro: { q:'', serv:'', sit:'', per:'', prev:'', ctr:'' } }),
       mostraDesc: id === 'osAbertas',
+      ehVeiculos: ehVeic, naoEhVeiculos: !ehVeic, gridCols,
       detailIconEl: this.ic(meta.icon, 26, sevCor.fg),
       sevFg: sevCor.fg,
       sevBg: sevCor.bg,

@@ -1,0 +1,52 @@
+===============================================================================
+SOLICITACAO PARA TI / SEGURANCA DA INFORMACAO
+Aplicacao interna: "Central de Inteligencia - Resumo Oficina" (MAAS)
+===============================================================================
+
+O QUE E
+-------
+Painel de TV da oficina. E uma aplicacao web local (Python/FastAPI) que roda
+NA PROPRIA maquina ligada a TV. A cada 5 minutos ela consulta o Google BigQuery
+(dataset da manutencao), calcula indicadores e atualiza a tela.
+
+POR QUE PODE APARECER NO SENTINELONE
+------------------------------------
+Como toda aplicacao web, ela:
+  - executa o interpretador Python (python.exe) de forma continua;
+  - abre um socket de escuta APENAS em localhost (127.0.0.1:8000) - nao expoe
+    porta na rede; nada entra de fora da maquina;
+  - faz conexoes de SAIDA HTTPS para o Google BigQuery (googleapis.com).
+Esses comportamentos sao normais para a aplicacao, mas o EDR pode sinaliza-los.
+NAO ha persistencia via registro, nem pasta de inicializacao, nem servico
+instalado por script - o inicio e feito por um .bat executado manualmente.
+
+O QUE PECO
+----------
+1) ALLOWLIST no SentinelOne (exclusao/aprovacao) para:
+     - Pasta do projeto:
+         <PREENCHER: caminho da pasta na maquina da TV>
+     - Executavel do ambiente virtual:
+         <PASTA>\backend\.venv\Scripts\python.exe
+     - Script de inicio:
+         <PASTA>\iniciar-painel-tv.bat
+   Trafego de saida permitido para: *.googleapis.com (BigQuery), porta 443.
+
+2) (OPCIONAL) AUTO-INICIO NO BOOT - caso queiram que o painel volte sozinho
+   apos reinicios, pelo caminho gerenciado e auditavel de voces:
+     - via Intune/GPO como tarefa de logon, OU
+     - Tarefa Agendada criada MANUALMENTE por voces no Agendador de Tarefas
+       (gatilho "Ao fazer logon" do usuario da maquina; acao: executar o
+       iniciar-painel-tv.bat).
+   Nao criei nenhum auto-inicio por conta propria de proposito, justamente
+   para nao gerar comportamento de persistencia sem aprovacao de voces.
+
+CREDENCIAIS
+-----------
+A conexao com o BigQuery usa uma Service Account do Google (arquivo JSON) que
+fica SOMENTE nesta maquina, fora do codigo/repositorio. Nenhuma senha ou chave
+fica no navegador. O painel nao envia dados para fora - so le do BigQuery.
+
+CONTATO
+-------
+Responsavel: Ygor Kouzak (ygor.kouzak@maasservicos.com.br)
+===============================================================================
