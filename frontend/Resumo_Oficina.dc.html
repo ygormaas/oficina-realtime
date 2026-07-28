@@ -410,7 +410,12 @@
             </div>
           </sc-if>
           <sc-if value="{{ hasDetailRows }}" hint-placeholder-val="{{ true }}">
-            <div style="display:grid;grid-template-columns:{{ gridCols }};column-gap:11px;min-width:0;padding:14px 28px;border-left:4px solid transparent;background:var(--surface-card);border-bottom:1px solid var(--border-subtle);position:sticky;top:0;z-index:2;">
+            <!-- Trilho da tabela: `min-width:max-content` dá UMA largura só para o
+                 cabeçalho e as linhas (ambos filhos block preenchem 100% dele).
+                 Sem isso o fundo do cabeçalho parava na largura visível e, ao rolar
+                 para o lado, as linhas apareciam atrás dos títulos. -->
+            <div style="min-width:max-content;">
+            <div style="display:grid;grid-template-columns:{{ gridCols }};column-gap:11px;box-sizing:border-box;padding:14px 28px;border-left:4px solid transparent;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Solic.</span>
               <sc-if value="{{ naoEhVeiculos }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Abertura</span></sc-if>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Ordem</span>
@@ -429,7 +434,7 @@
               <sc-if value="{{ ehVeiculos }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Local</span></sc-if>
             </div>
             <sc-for list="{{ detailRows }}" as="r" hint-placeholder-count="6">
-              <div style="display:grid;grid-template-columns:{{ r.gridCols }};column-gap:11px;min-width:0;padding:15px 28px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.ssBar }};align-items:center;font-variant-numeric:tabular-nums;" style-hover="background:var(--surface-sunken);">
+              <div style="display:grid;grid-template-columns:{{ r.gridCols }};column-gap:11px;box-sizing:border-box;padding:15px 28px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.ssBar }};align-items:center;font-variant-numeric:tabular-nums;" style-hover="background:var(--surface-sunken);">
                 <span class="mono" style="font-size:14px;font-weight:{{ r.ssWeight }};color:{{ r.ssFg }};">{{ r.ss }}</span>
                 <sc-if value="{{ r.naoEhVeiculos }}" hint-placeholder-val="{{ true }}">
                 <span style="display:flex;flex-direction:column;gap:1px;">
@@ -456,7 +461,7 @@
                      cláusula está sempre estourado nesta lista). -->
                 <sc-if value="{{ r.ehPadrao }}" hint-placeholder-val="{{ true }}"><span><span class="sans" style="display:inline-block;padding:5px 13px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:600;color:{{ r.stStyle.fg }};background:{{ r.stStyle.bg }};border:1.5px solid {{ r.stStyle.bd }};white-space:nowrap;">{{ r.st }}</span></span></sc-if>
                 <sc-if value="{{ r.ehClausula }}">
-                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;padding-bottom:6px;border-bottom:2px solid #B83A32;">
+                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;padding-bottom:5px;border-bottom:1px solid #B83A32;">
                   <sc-if value="{{ r.temSla }}" hint-placeholder-val="{{ true }}">
                     <span class="mono" style="font-size:12.5px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;">{{ r.slaDia }}</span>
                     <span class="mono" style="font-size:11.5px;color:var(--maas-petroleo-45);">{{ r.slaHora }}</span>
@@ -477,7 +482,7 @@
                 </span>
                 </sc-if>
                 <sc-if value="{{ r.ehClausula }}">
-                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;padding-bottom:6px;border-bottom:2px solid {{ r.prevLinhaCor }};">
+                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;padding-bottom:5px;border-bottom:1px solid {{ r.prevLinhaCor }};">
                   <sc-if value="{{ r.temPrevisao }}" hint-placeholder-val="{{ true }}">
                     <span class="mono" style="font-size:12.5px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;">{{ r.previsaoDia }}</span>
                     <span class="mono" style="font-size:11.5px;color:var(--maas-petroleo-45);">{{ r.previsaoHora }}</span>
@@ -496,6 +501,7 @@
                 </sc-if>
               </div>
             </sc-for>
+            </div><!-- /trilho da tabela -->
           </sc-if>
         </div>
         <!-- Rodapé -->
@@ -561,14 +567,17 @@
             </div>
           </sc-if>
           <sc-if value="{{ mecHasRows }}" hint-placeholder-val="{{ true }}">
-            <div style="display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(170px,1fr) 150px minmax(190px,1fr);column-gap:14px;padding:14px 32px;background:var(--surface-card);border-bottom:1px solid var(--border-subtle);position:sticky;top:0;z-index:2;">
+            <!-- Mesmo trilho do drill-down de O.S.: uma largura só para cabeçalho
+                 e linhas, para o fundo do cabeçalho cobrir toda a faixa rolável. -->
+            <div style="min-width:max-content;">
+            <div style="display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(170px,1fr) 150px minmax(190px,1fr);column-gap:14px;box-sizing:border-box;padding:14px 32px;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Mecânico</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Função</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Status</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Turno</span>
             </div>
             <sc-for list="{{ mecRows }}" as="r" hint-placeholder-count="8">
-              <div style="display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(170px,1fr) 150px minmax(190px,1fr);column-gap:14px;padding:15px 32px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.barra }};align-items:center;" style-hover="background:var(--surface-sunken);">
+              <div style="display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(170px,1fr) 150px minmax(190px,1fr);column-gap:14px;box-sizing:border-box;padding:15px 32px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.barra }};align-items:center;" style-hover="background:var(--surface-sunken);">
                 <span style="display:flex;flex-direction:column;gap:1px;min-width:0;">
                   <span class="sans" style="font-size:15px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.nome }}</span>
                   <span class="mono" style="font-size:12px;color:var(--maas-petroleo-45);">mat. {{ r.matricula }}</span>
@@ -578,6 +587,7 @@
                 <span class="mono" style="font-size:13px;font-weight:600;color:var(--maas-petroleo-60);white-space:nowrap;">{{ r.turnoTxt }}</span>
               </div>
             </sc-for>
+            </div><!-- /trilho da tabela -->
           </sc-if>
         </div>
         <!-- Rodapé -->
