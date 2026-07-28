@@ -41,6 +41,13 @@
     /* Volta ao texto de apoio dentro de um contêiner marcado como display. */
     .sans{font-family:var(--font-sans);}
 
+    /* Células dos drill-downs: min-width:0 deixa as colunas minmax(0,…)
+       encolherem de verdade e overflow:hidden corta o conteúdo (com reticências
+       nos textos) em vez de transbordar — a tabela cabe sem rolagem horizontal.
+       A borda inferior de sinalização (SLA/Previsto) é do próprio item, não é
+       clipada. */
+    .dtl-grid>*{min-width:0;overflow:hidden;}
+
     @keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.35}}
     @media (prefers-reduced-motion: reduce){*{animation:none!important}}
   </style>
@@ -410,12 +417,13 @@
             </div>
           </sc-if>
           <sc-if value="{{ hasDetailRows }}" hint-placeholder-val="{{ true }}">
-            <!-- Trilho da tabela: `min-width:max-content` dá UMA largura só para o
-                 cabeçalho e as linhas (ambos filhos block preenchem 100% dele).
-                 Sem isso o fundo do cabeçalho parava na largura visível e, ao rolar
-                 para o lado, as linhas apareciam atrás dos títulos. -->
-            <div style="min-width:max-content;">
-            <div style="display:grid;grid-template-columns:{{ gridCols }};column-gap:11px;box-sizing:border-box;padding:14px 28px;border-left:4px solid transparent;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
+            <!-- Trilho da tabela: cabeçalho e linhas são filhos block do MESMO
+                 contêiner, então têm sempre a mesma largura (o fundo do cabeçalho
+                 cobre toda a faixa e nada aparece atrás dos títulos). Sem
+                 `max-content` de propósito: as colunas flexíveis precisam ENCOLHER
+                 com reticências para a tabela caber sem rolagem horizontal. -->
+            <div>
+            <div class="dtl-grid" style="display:grid;grid-template-columns:{{ gridCols }};column-gap:11px;box-sizing:border-box;padding:14px 28px;border-left:4px solid transparent;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Solic.</span>
               <sc-if value="{{ naoEhVeiculos }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Abertura</span></sc-if>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Ordem</span>
@@ -434,7 +442,7 @@
               <sc-if value="{{ ehVeiculos }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Local</span></sc-if>
             </div>
             <sc-for list="{{ detailRows }}" as="r" hint-placeholder-count="6">
-              <div style="display:grid;grid-template-columns:{{ r.gridCols }};column-gap:11px;box-sizing:border-box;padding:15px 28px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.ssBar }};align-items:center;font-variant-numeric:tabular-nums;" style-hover="background:var(--surface-sunken);">
+              <div class="dtl-grid" style="display:grid;grid-template-columns:{{ r.gridCols }};column-gap:11px;box-sizing:border-box;padding:15px 28px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.ssBar }};align-items:center;font-variant-numeric:tabular-nums;" style-hover="background:var(--surface-sunken);">
                 <span class="mono" style="font-size:14px;font-weight:{{ r.ssWeight }};color:{{ r.ssFg }};">{{ r.ss }}</span>
                 <sc-if value="{{ r.naoEhVeiculos }}" hint-placeholder-val="{{ true }}">
                 <span style="display:flex;flex-direction:column;gap:1px;">
@@ -461,7 +469,7 @@
                      cláusula está sempre estourado nesta lista). -->
                 <sc-if value="{{ r.ehPadrao }}" hint-placeholder-val="{{ true }}"><span><span class="sans" style="display:inline-block;padding:5px 13px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:600;color:{{ r.stStyle.fg }};background:{{ r.stStyle.bg }};border:1.5px solid {{ r.stStyle.bd }};white-space:nowrap;">{{ r.st }}</span></span></sc-if>
                 <sc-if value="{{ r.ehClausula }}">
-                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;padding-bottom:5px;border-bottom:1px solid #B83A32;">
+                <span style="display:flex;flex-direction:column;justify-content:center;gap:1px;min-width:0;align-self:stretch;margin:-15px 0 -16px;padding:15px 0;box-sizing:border-box;border-bottom:1px solid #B83A32;">
                   <sc-if value="{{ r.temSla }}" hint-placeholder-val="{{ true }}">
                     <span class="mono" style="font-size:12.5px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;">{{ r.slaDia }}</span>
                     <span class="mono" style="font-size:11.5px;color:var(--maas-petroleo-45);">{{ r.slaHora }}</span>
@@ -482,7 +490,7 @@
                 </span>
                 </sc-if>
                 <sc-if value="{{ r.ehClausula }}">
-                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;padding-bottom:5px;border-bottom:1px solid {{ r.prevLinhaCor }};">
+                <span style="display:flex;flex-direction:column;justify-content:center;gap:1px;min-width:0;align-self:stretch;margin:-15px 0 -16px;padding:15px 0;box-sizing:border-box;border-bottom:1px solid {{ r.prevLinhaCor }};">
                   <sc-if value="{{ r.temPrevisao }}" hint-placeholder-val="{{ true }}">
                     <span class="mono" style="font-size:12.5px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;">{{ r.previsaoDia }}</span>
                     <span class="mono" style="font-size:11.5px;color:var(--maas-petroleo-45);">{{ r.previsaoHora }}</span>
@@ -567,9 +575,10 @@
             </div>
           </sc-if>
           <sc-if value="{{ mecHasRows }}" hint-placeholder-val="{{ true }}">
-            <!-- Mesmo trilho do drill-down de O.S.: uma largura só para cabeçalho
-                 e linhas, para o fundo do cabeçalho cobrir toda a faixa rolável. -->
-            <div style="min-width:max-content;">
+            <!-- Mesmo trilho do drill-down de O.S.: cabeçalho e linhas como filhos
+                 block do mesmo contêiner, sem `max-content` (as colunas precisam
+                 encolher para a tabela caber sem rolagem horizontal). -->
+            <div>
             <div style="display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(170px,1fr) 150px minmax(190px,1fr);column-gap:14px;box-sizing:border-box;padding:14px 32px;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Mecânico</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Função</span>
@@ -965,8 +974,13 @@ class Component extends DCLogic {
     // Previsão, com Mobilização e Local (interna/externa). Os demais mantêm o
     // conjunto padrão. gridCols acompanha (8 colunas x 9).
     const ehVeic = id === 'veiculos';
-    const GRID_STD  = '76px 118px 70px minmax(190px,1fr) 92px minmax(150px,.75fr) 140px 122px 124px';
-    const GRID_VEIC = '76px 70px minmax(190px,1fr) 92px minmax(150px,.75fr) 140px 150px 120px';
+    // Colunas TODAS encolhíveis (minmax(0,…)): o grid cabe 100% do container em
+    // qualquer largura — sem rolagem horizontal — e as colunas de texto flexível
+    // (veículo/reserva, em fr) absorvem a sobra/aperto, cortando com reticências.
+    // Como cabeçalho e linhas usam o mesmo template e preenchem o container, ficam
+    // sempre da mesma largura (o fundo do cabeçalho cobre tudo, sem vazamento).
+    const GRID_STD  = 'minmax(0,72px) minmax(0,104px) minmax(0,64px) minmax(0,1.7fr) minmax(0,90px) minmax(0,1fr) minmax(0,116px) minmax(0,116px) minmax(0,116px)';
+    const GRID_VEIC = 'minmax(0,72px) minmax(0,64px) minmax(0,1.7fr) minmax(0,90px) minmax(0,1fr) minmax(0,116px) minmax(0,132px) minmax(0,96px)';
     const gridCols = ehVeic ? GRID_VEIC : GRID_STD;
     const todas = raw.slice()
       .sort((a, b) => (firstSeen[a.ss] - firstSeen[b.ss]))   // mesma S.S. lado a lado
@@ -1008,9 +1022,10 @@ class Component extends DCLogic {
                  semSla: !r.sla,
                  slaDia: (r.sla || '').split(' ')[0] || '',
                  slaHora: (r.sla || '').split(' ')[1] || '',
-                 // Sinalização por LINHA inferior: SLA sempre vermelha (estourado);
-                 // Previsto vermelha só se também ultrapassado, senão neutra.
-                 prevLinhaCor: r.previsaoAtrasada ? '#B83A32' : 'var(--maas-petroleo-18)',
+                 // Sinalização por LINHA inferior (na posição do separador cinza):
+                 // Previsto vermelha só se ultrapassado; senão a MESMA cinza do
+                 // separador (--border-subtle), para fundir com a linha da tabela.
+                 prevLinhaCor: r.previsaoAtrasada ? '#B83A32' : 'var(--border-subtle)',
                  ssWeight: g ? '800' : '400' };
       });
 
