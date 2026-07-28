@@ -104,10 +104,13 @@ Fontes alternáveis por `DATA_SOURCE` no `backend/.env`:
 - **Mão de Obra** = DISTINCTCOUNT `SRA_SRJ_Funcionarios.RA_MAT` por `StatusFinal`
   (Disponível/Trabalhando/Intervalo). O drill-down "Ver equipe" (card Capacidade
   × demanda) lista o efetivo EM TURNO — nome (`RA_NOMECMP`), função (`RJ_DESC`),
-  status e turno (`HoraEntrada/Saida 1 e 2`), em `detalhes.mecanicos`
-  (`_mecanicos_detalhe`). **NÃO há coluna de O.S.**: a base não liga o mecânico à
-  ordem que executa — o SIAN (`SILVER_SIAN_SUPABASE_TAREFAS`) teria o vínculo, mas
-  o registro é raro e defasado (4/47 tarefas, resíduos de meses atrás). Ver
+  status, turno (`HoraEntrada/Saida 1 e 2`) e a **O.S./S.S. em execução**, em
+  `detalhes.mecanicos` (`_mecanicos_detalhe`). A O.S./S.S. vem do **apontamento de
+  mão de obra `STL_Custo`** (`fetch_mecanicos_os`): `tipoReg='M'`, `seqrela='0'`,
+  `ordem` entre as abertas (join `key_filial_ordem_plano` com `STJ_Manutencao`);
+  `STL.ordem`=O.S., `STJ.solici`=S.S. É a MESMA fonte que define "Trabalhando" na
+  view SRA, então "Trabalhando" mostra a(s) O.S. e "Disponível" fica "—". O SIAN
+  (`SILVER_SIAN_SUPABASE_*`) foi descartado (registro raro/defasado). Ver
   [[mao-de-obra-detalhe-sian]].
 - **Preventivas** = DISTINCTCOUNT `STF_Status_Manutencao.codBem` por `statusManutencao`
   (Atrasado / Período Final / Período Inicial).

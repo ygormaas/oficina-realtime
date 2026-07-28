@@ -580,20 +580,30 @@
                  block do mesmo contêiner, sem `max-content` (as colunas precisam
                  encolher para a tabela caber sem rolagem horizontal). -->
             <div>
-            <div style="display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(170px,1fr) 150px minmax(190px,1fr);column-gap:14px;box-sizing:border-box;padding:14px 32px;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
-              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Mecânico</span>
+            <div class="dtl-grid" style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,132px) minmax(0,1.2fr) minmax(0,150px);column-gap:14px;box-sizing:border-box;padding:14px 32px;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Nome</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Função</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Status</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">O.S. / S.S.</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Turno</span>
             </div>
             <sc-for list="{{ mecRows }}" as="r" hint-placeholder-count="8">
-              <div style="display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(170px,1fr) 150px minmax(190px,1fr);column-gap:14px;box-sizing:border-box;padding:15px 32px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.barra }};align-items:center;" style-hover="background:var(--surface-sunken);">
+              <div class="dtl-grid" style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,132px) minmax(0,1.2fr) minmax(0,150px);column-gap:14px;box-sizing:border-box;padding:15px 32px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.barra }};align-items:center;" style-hover="background:var(--surface-sunken);">
                 <span style="display:flex;flex-direction:column;gap:1px;min-width:0;">
                   <span class="sans" style="font-size:15px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.nome }}</span>
                   <span class="mono" style="font-size:12px;color:var(--maas-petroleo-45);">mat. {{ r.matricula }}</span>
                 </span>
                 <span class="sans" style="font-size:13.5px;font-weight:600;color:var(--maas-petroleo-60);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.funcao }}</span>
                 <span><span class="sans" style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:700;color:{{ r.stFg }};background:{{ r.stBg }};border:1.5px solid {{ r.stBd }};white-space:nowrap;"><span style="width:7px;height:7px;border-radius:50%;background:{{ r.stCor }};flex:none;"></span>{{ r.status }}</span></span>
+                <!-- O.S. / S.S. em que o mecânico trabalha (STL_Custo). "Trabalhando"
+                     tem apontamento aberto; "Disponível" fica com "—". -->
+                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;" title="{{ r.osTitle }}">
+                  <sc-if value="{{ r.temOs }}" hint-placeholder-val="{{ true }}">
+                    <span class="mono" style="font-size:13px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">O.S. {{ r.os }}</span>
+                    <span class="mono" style="font-size:11.5px;color:var(--maas-petroleo-45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">S.S. {{ r.ss }}</span>
+                  </sc-if>
+                  <sc-if value="{{ r.semOs }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
+                </span>
                 <span class="mono" style="font-size:13px;font-weight:600;color:var(--maas-petroleo-60);white-space:nowrap;">{{ r.turnoTxt }}</span>
               </div>
             </sc-for>
@@ -602,7 +612,7 @@
         </div>
         <!-- Rodapé -->
         <div style="display:flex;align-items:center;gap:10px;padding:16px 32px;border-top:1px solid var(--border-subtle);flex:none;background:var(--surface-card);">
-          <span style="font-size:13px;color:var(--maas-petroleo-45);">Fonte: SRA_SRJ_Funcionarios · efetivo em turno · a base não vincula mecânico à O.S.</span>
+          <span style="font-size:13px;color:var(--maas-petroleo-45);">Fonte: SRA_SRJ_Funcionarios (efetivo/turno) + STL_Custo (O.S./S.S. em execução)</span>
           <span onClick="{{ closeMec }}" role="button" tabindex="0" style="margin-left:auto;font-size:14px;font-weight:700;color:#fff;background:var(--maas-petroleo);padding:11px 22px;border-radius:10px;cursor:pointer;" style-hover="background:var(--maas-petroleo-70);">Voltar ao painel</span>
         </div>
       </div>
@@ -1151,12 +1161,15 @@ class Component extends DCLogic {
     const todas = raw.map(r => {
       const st = stDe(r.status);
       return { ...r, stCor: st.cor, stFg: st.fg, stBg: st.bg, stBd: st.bd,
-               barra: st.cor, turnoTxt: r.turno || '—' };
+               barra: st.cor, turnoTxt: r.turno || '—',
+               // O.S./S.S. em que o mecânico trabalha (vazio = sem apontamento).
+               temOs: !!r.os, semOs: !r.os,
+               osTitle: r.os ? ('O.S. ' + r.os + '  ·  S.S. ' + r.ss) : '' };
     });
 
     const f = this.state.mecFiltro || { q:'', status:'' };
     const q = (f.q || '').trim().toLowerCase();
-    const alvo = (r) => [r.nome, r.matricula, r.funcao, r.status].join(' ').toLowerCase();
+    const alvo = (r) => [r.nome, r.matricula, r.funcao, r.status, r.os, r.ss].join(' ').toLowerCase();
     const rows = todas.filter(r => (!q || alvo(r).includes(q)) && (!f.status || r.status === f.status));
 
     // Chips de status com contagem sobre o efetivo inteiro (ordem fixa).
@@ -1178,7 +1191,7 @@ class Component extends DCLogic {
     const partes = ordem.filter(s => conta.has(s)).map(s => conta.get(s) + ' ' + s.toLowerCase());
     const mecSubtitle = temFiltro
       ? (rows.length + ' de ' + todas.length + ' no efetivo em turno')
-      : (partes.length ? partes.join(' · ') + ' — a base não registra a O.S. de cada um'
+      : (partes.length ? partes.join(' · ') + ' — com a O.S./S.S. em execução por mecânico'
                        : 'Sem efetivo em turno no momento');
 
     return {

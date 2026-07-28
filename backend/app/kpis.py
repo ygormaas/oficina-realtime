@@ -337,19 +337,50 @@ def _turno(row: dict) -> str:
 _MEC_STATUS_ORDEM = {"Trabalhando": 0, "Disponível": 1, "Intervalo": 2}
 
 
-def _mecanicos_detalhe(mec_rows: list[dict] | None) -> list[dict]:
+def _mat_key(v: Any) -> str:
+    """Normaliza matrícula para casar SRA.RA_MAT com STL_Custo.Matricula (que
+    podem divergir só no zero à esquerda): '04480' e '4480' viram '4480'."""
+    s = _s(v)
+    try:
+        return str(int(s))
+    except (TypeError, ValueError):
+        return s
+
+
+def _os_por_matricula(os_rows: list[dict] | None) -> dict[str, dict]:
+    """Agrupa o apontamento aberto (fetch_mecanicos_os) por matrícula:
+    {mat_key: {"os": [ordens…], "ss": [solicitações…]}} (listas ordenadas e
+    sem repetição)."""
+    idx: dict[str, dict] = {}
+    for r in os_rows or []:
+        mat = _mat_key(r.get("matricula"))
+        if not mat:
+            continue
+        g = idx.setdefault(mat, {"os": set(), "ss": set()})
+        if _s(r.get("os")):
+            g["os"].add(_s(r.get("os")))
+        if _s(r.get("ss")):
+            g["ss"].add(_s(r.get("ss")))
+    return {m: {"os": sorted(g["os"]), "ss": sorted(g["ss"])} for m, g in idx.items()}
+
+
+def _mecanicos_detalhe(mec_rows: list[dict] | None,
+                       os_rows: list[dict] | None = None) -> list[dict]:
     """Detalhamento "quem são" da mão de obra: uma linha por funcionário EM
     TURNO (StatusFinal em Trabalhando/Disponível/Intervalo — os mesmos que o
-    card conta), com nome, função, centro de custo, status e janela de turno.
-
-    NÃO há coluna de O.S.: a base não registra qual ordem cada mecânico executa
-    de forma viva (ver fetch_mecanicos em bq.py). Ordena por status (Trabalhando,
-    Disponível, Intervalo) e depois por nome. Lista vazia sem a fonte."""
+    card conta), com nome, função, centro de custo, status, turno e a **O.S./S.S.
+    que ele está trabalhando** (via STL_Custo — ver _os_por_matricula /
+    fetch_mecanicos_os). Quem está "Trabalhando" tem apontamento aberto e mostra
+    a(s) ordem(ns); "Disponível" fica sem O.S. (é o próprio significado do
+    status). Ordena por status (Trabalhando, Disponível, Intervalo) e depois por
+    nome. Lista vazia sem a fonte."""
+    os_idx = _os_por_matricula(os_rows)
     linhas = []
     for r in mec_rows or []:
         status = _s(r.get("StatusFinal"))
         if status not in _MEC_STATUS_ORDEM:
             continue
+        ap = os_idx.get(_mat_key(r.get("RA_MAT")), {"os": [], "ss": []})
         linhas.append({
             "matricula": _s(r.get("RA_MAT")),
             "nome":      _titulo(r.get("RA_NOMECMP")) or "—",
@@ -357,6 +388,8 @@ def _mecanicos_detalhe(mec_rows: list[dict] | None) -> list[dict]:
             "cc":        _s(r.get("RA_CC")),
             "status":    status,
             "turno":     _turno(r),
+            "os":        ", ".join(ap["os"]),
+            "ss":        ", ".join(ap["ss"]),
         })
     return sorted(linhas, key=lambda x: (_MEC_STATUS_ORDEM.get(x["status"], 9),
                                          x["nome"]))
@@ -727,6 +760,7 @@ def build_payload(man_rows: list[dict],
                   prev_rows: list[dict] | None = None,
                   tqr_rows: list[dict] | None = None,
                   ss_rows: list[dict] | None = None,
+                  mecanicos_os_rows: list[dict] | None = None,
                   agora: datetime | None = None) -> dict:
     """
     Devolve o JSON que o painel consome. As REGRAS seguem as medidas DAX do
@@ -904,7 +938,7 @@ def build_payload(man_rows: list[dict],
             _detalhes_reserva(reserva_grupos, bem_idx, man_por_ordem, agora)),
         # Mão de obra: "quem são" do efetivo em turno (sem O.S. — a base não liga
         # mecânico à ordem executada; ver _mecanicos_detalhe / fetch_mecanicos).
-        "mecanicos":   _mecanicos_detalhe(mecanicos_rows),
+        "mecanicos":   _mecanicos_detalhe(mecanicos_rows, mecanicos_os_rows),
     }
 
     return {

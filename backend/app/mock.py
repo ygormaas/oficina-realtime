@@ -107,15 +107,16 @@ def build_mock_payload() -> dict:
             "reservaLimite": [],
             "sos": sos,
             "retorno": [],
-            # Mão de obra: efetivo em turno (sem O.S. — a base não liga mecânico
-            # à ordem; ver _mecanicos_detalhe em kpis.py).
+            # Mão de obra: efetivo em turno + O.S./S.S. que está trabalhando (vem
+            # de STL_Custo no real; ver _mecanicos_detalhe em kpis.py). Quem está
+            # "Trabalhando" tem apontamento aberto; "Disponível" fica sem O.S.
             "mecanicos": [
-                {"matricula": "04480", "nome": "Abraão Carlos Barbosa",  "funcao": "Mecânico Nível II",  "cc": "104101002", "status": "Trabalhando", "turno": "06:00–11:00 · 12:00–15:48"},
-                {"matricula": "09043", "nome": "Augusto Oliveira De Sousa","funcao": "Mecânico Nível II", "cc": "104101002", "status": "Trabalhando", "turno": "06:00–11:00 · 12:00–15:48"},
-                {"matricula": "09044", "nome": "Jainara Da Silva Reis",    "funcao": "Eletricista Nível II","cc": "104101003","status": "Trabalhando", "turno": "06:00–12:00 · 13:10–14:30"},
-                {"matricula": "20674", "nome": "Jefferson Batista Dos Santos","funcao": "Mecânico Nível II","cc": "104101002","status": "Disponível","turno": "07:00–11:00 · 12:00–15:20"},
-                {"matricula": "08462", "nome": "Marcos Antonio Ribeiro",   "funcao": "Eletricista Nível II","cc": "104101001","status": "Disponível","turno": "06:00–11:00 · 12:00–14:20"},
-                {"matricula": "08824", "nome": "Wadson De Souza Cardoso",   "funcao": "Mecânico Nível II",  "cc": "104101002","status": "Disponível","turno": "07:00–12:00 · 13:00–16:48"},
+                {"matricula": "04480", "nome": "Abraão Carlos Barbosa",  "funcao": "Mecânico Nível II",  "cc": "104101002", "status": "Trabalhando", "turno": "06:00–11:00 · 12:00–15:48", "os": "038035", "ss": "032643"},
+                {"matricula": "09043", "nome": "Augusto Oliveira De Sousa","funcao": "Mecânico Nível II", "cc": "104101002", "status": "Trabalhando", "turno": "06:00–11:00 · 12:00–15:48", "os": "037543, 038200, 038213", "ss": "032156, 032802, 032804"},
+                {"matricula": "09044", "nome": "Jainara Da Silva Reis",    "funcao": "Eletricista Nível II","cc": "104101003","status": "Trabalhando", "turno": "06:00–12:00 · 13:10–14:30", "os": "038106", "ss": "032712"},
+                {"matricula": "20674", "nome": "Jefferson Batista Dos Santos","funcao": "Mecânico Nível II","cc": "104101002","status": "Disponível","turno": "07:00–11:00 · 12:00–15:20", "os": "", "ss": ""},
+                {"matricula": "08462", "nome": "Marcos Antonio Ribeiro",   "funcao": "Eletricista Nível II","cc": "104101001","status": "Disponível","turno": "06:00–11:00 · 12:00–14:20", "os": "", "ss": ""},
+                {"matricula": "08824", "nome": "Wadson De Souza Cardoso",   "funcao": "Mecânico Nível II",  "cc": "104101002","status": "Disponível","turno": "07:00–12:00 · 13:00–16:48", "os": "", "ss": ""},
             ],
         },
     }

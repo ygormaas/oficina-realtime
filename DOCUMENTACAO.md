@@ -173,6 +173,7 @@ quando `DATA_SOURCE=bigquery`).
 | `fetch_ss_aguardando()` | `TQB_Monitoramento` (sem filtro de término) | S.S. que ainda não viraram O.S. |
 | `fetch_cadastro_bem()` | `ST9_CadastroBem` | contrato, lote, status e placa do veículo |
 | `fetch_mecanicos()` | `SRA_SRJ_Funcionarios` | efetivo (nome, função, status, turno) |
+| `fetch_mecanicos_os()` | `STL_Custo` + `STJ_Manutencao` | O.S./S.S. em execução por matrícula |
 | `fetch_preventivas()` | `STF_Status_Manutencao` | status das preventivas por bem |
 | `fetch_tqr()` | `TQR` | categoria do veículo (Pesada/Leve) |
 
@@ -246,6 +247,7 @@ Dataset `gcp-maas-proj-manutencao.silver`. Junções principais:
 - `TQB_Monitoramento.Codbem` = `ST9_CadastroBem.bem`
 - `ST9_CadastroBem.numeroContrato` = `SZT_Contratos.Num`  *(SLA de cláusula)*
 - `ST9_CadastroBem.tecnologia` = `TQR.TQR_TIPMOD`  *(tipo de veículo)*
+- `STL_Custo.key_filial_ordem_plano` = `STJ_Manutencao.key_filial_ordem_plano`  *(mecânico → O.S.)*
 
 | Tabela | O que dá |
 |---|---|
@@ -254,9 +256,10 @@ Dataset `gcp-maas-proj-manutencao.silver`. Junções principais:
 | `ST9_CadastroBem` | cadastro do veículo: contrato, lote, `statusBem`, placa, nome, tecnologia |
 | `SZT_Contratos` | contrato: `Sla`/`SlaSos` (**duração** `HHHH:MM`), cliente, vigência. Liga por `Num` |
 | `SRA_SRJ_Funcionarios` | efetivo (view derivada da escala): nome, função, `StatusFinal` calculado ao vivo, turno |
+| `STL_Custo` | apontamento de mão de obra: `Matricula` + `ordem` (O.S.) — liga o mecânico à O.S./S.S. em execução (mesma fonte do status "Trabalhando") |
 | `STF_Status_Manutencao` | status das preventivas por bem |
 | `TQR` | catálogo de modelos → categoria (Pesada/Leve) |
-| `SILVER_SIAN_SUPABASE_*` | sistema da oficina (tarefas/mecânicos) — **não usado** no vínculo mecânico→O.S. por estar defasado (ver §12) |
+| `SILVER_SIAN_SUPABASE_*` | sistema da oficina (tarefas/mecânicos) — **descartado** para o vínculo mecânico→O.S. por estar defasado (ver §12) |
 
 **Domínio de `ST9_CadastroBem.statusBem`:** 01 Locado · **02 Reserva** · 03 Serviços
 · 04 Disponível · 05 Negociado · 06 Venda · 07 Vendido · 08 Em Adequação · 10
@@ -414,7 +417,7 @@ Para cada indicador: a regra, a fonte e onde mexer (`kpis.py`, salvo indicação
 | **Tipo de veículo** | Pesada/Leve via `TQR.TQR_CATBEM` | TQR + ST9 |
 | **Idade das O.S. (aging)** | faixas 0–2 / 3–7 / 8–30 / >30 dias pela abertura da S.S. | STJ + TQB |
 | **Preventivas** | DISTINCTCOUNT `codBem` por `statusManutencao` (Atrasado/Período Final/Inicial) | STF_Status_Manutencao |
-| **Mão de Obra** | DISTINCTCOUNT `RA_MAT` por `StatusFinal` (Trabalhando/Disponível/Intervalo). Drill-down lista o efetivo em turno (sem O.S. — a base não liga mecânico à ordem) | SRA_SRJ_Funcionarios |
+| **Mão de Obra** | DISTINCTCOUNT `RA_MAT` por `StatusFinal` (Trabalhando/Disponível/Intervalo). Drill-down lista o efetivo em turno com nome, função, status, turno e a **O.S./S.S. em execução** (via STL_Custo — Trabalhando mostra a O.S., Disponível "—") | SRA_SRJ_Funcionarios + STL_Custo |
 
 **Notas de decisão sobre a Cláusula** (a regra mais discutida):
 - O painel de referência define: *"veículos com contrato que entraram no status de
@@ -492,10 +495,11 @@ com casos sobre `kpis.build_payload` (linhas sintéticas).
   exceção: segue o flag `SLAUltrapassadoCC` para bater com o painel de referência.
 - **Placa.** Vem de `ST9_CadastroBem.placa`; sem placa cadastrada, cai para
   "Bem N".
-- **Mecânico → O.S. não existe de forma confiável.** O sistema SIAN
-  (`SILVER_SIAN_SUPABASE_TAREFAS`) teria o vínculo, mas o registro é raro e
-  defasado (poucas tarefas, resíduos de meses atrás). Por isso o drill-down de mão
-  de obra mostra **quem está em turno**, sem a coluna de O.S.
+- **Mecânico → O.S. vem do `STL_Custo`** (apontamento de mão de obra), a mesma
+  fonte que a view SRA usa para o status "Trabalhando". O drill-down de mão de obra
+  mostra a O.S./S.S. em execução por mecânico (Trabalhando tem apontamento aberto;
+  Disponível fica "—"). O sistema SIAN (`SILVER_SIAN_SUPABASE_TAREFAS`) foi
+  descartado para isso — registro raro e defasado (resíduos de meses atrás).
 - **`TTI_Portaria` aposentada.** O feed parou em 07/04/2026; "Reservas no Limite"
   passou a usar `Xbemre` da TQB + estoque `statusBem='02'` do ST9.
 - **Preventivas atrasadas** filtram janelas vencidas há mais de `PREV_RETRO_DIAS`
