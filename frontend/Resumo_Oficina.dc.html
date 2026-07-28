@@ -60,8 +60,8 @@
       <img src="logo-maas.png" alt="MAAS" style="height:42px;width:auto;display:block;flex:none;">
       <span style="width:1px;height:44px;background:var(--border-default);"></span>
       <div style="display:flex;flex-direction:column;gap:4px;">
-        <span style="font-size:14px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--maas-petroleo-45);">Central de Inteligência</span>
-        <span style="font-size:31px;font-weight:800;letter-spacing:-.6px;color:var(--maas-petroleo);line-height:1;white-space:nowrap;">Resumo — Oficina</span>
+        <span style="font-size:31px;font-weight:800;letter-spacing:-.6px;color:var(--maas-petroleo);line-height:1;white-space:nowrap;">Manutenção</span>
+        <span style="font-size:14px;font-weight:600;color:var(--maas-petroleo-45);white-space:nowrap;">Quadro operacional da oficina</span>
       </div>
       <div style="margin-left:auto;display:flex;align-items:flex-start;gap:12px;">
         <span style="display:inline-flex;color:var(--maas-verde);margin-top:2px;">{{ icClock }}</span>
@@ -427,7 +427,7 @@
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Solic.</span>
               <sc-if value="{{ naoEhVeiculos }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Abertura</span></sc-if>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Ordem</span>
-              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Veículo &amp; serviço</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Prefixo</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Contrato</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Reserva</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Tipo</span>
@@ -452,7 +452,8 @@
                 </sc-if>
                 <span class="mono" style="font-size:14px;font-weight:700;color:var(--maas-petroleo);">{{ r.os }}</span>
                 <span style="display:flex;align-items:baseline;gap:9px;min-width:0;">
-                  <span class="mono" style="font-size:14.5px;font-weight:700;color:var(--maas-petroleo);flex:none;">{{ r.placa }}</span>
+                  <!-- Identificador = codBem (a placa já aparece no nome/descrição). -->
+                  <span class="mono" style="font-size:14.5px;font-weight:700;color:var(--maas-petroleo);flex:none;">{{ r.codBem }}</span>
                   <sc-if value="{{ r.nome }}"><span class="sans" style="font-size:12px;color:var(--maas-petroleo-45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">{{ r.nome }}</span></sc-if>
                 </span>
                 <span class="mono" style="font-size:13px;font-weight:600;color:var(--maas-petroleo-60);white-space:nowrap;">{{ r.contratoTxt }}</span>
@@ -1031,7 +1032,7 @@ class Component extends DCLogic {
 
     // ---- Filtros -----------------------------------------------------------
     const f = this.state.filtro || { q:'', serv:'', sit:'', per:'', prev:'', ctr:'' };
-    const alvo = (r) => [r.ss, r.os, r.placa, r.nome, r.desc, r.abertura, r.serv, r.st, r.contrato]
+    const alvo = (r) => [r.ss, r.os, r.codBem, r.placa, r.nome, r.desc, r.abertura, r.serv, r.st, r.contrato]
       .join(' ').toLowerCase();
     const q = f.q.trim().toLowerCase();
     const diasDe = (r) => {

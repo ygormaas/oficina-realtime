@@ -16,7 +16,9 @@ def _linha(ab: datetime, ss: str, os_: str, placa: str, mobil: bool, serv: str, 
     return {
         "abertura": ab.strftime("%d/%m %H:%M"),
         "aberturaIso": ab.isoformat(),
-        "ss": ss, "os": os_, "placa": placa, "contrato": "",
+        # codBem: na base é o código do veículo; no mock não há bem real, então
+        # usamos a placa como stand-in só para a coluna não ficar vazia na demo.
+        "ss": ss, "os": os_, "codBem": placa, "placa": placa, "contrato": "",
         # Reserva que substitui o veículo parado — ver _reserva_de_mon em kpis.py.
         "reserva": reserva, "reservaNome": "", "reservaSt": reserva_st,
         "desc": "",   # descrição do serviço (STJ.observa)
