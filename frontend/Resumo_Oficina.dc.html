@@ -410,7 +410,7 @@
             </div>
           </sc-if>
           <sc-if value="{{ hasDetailRows }}" hint-placeholder-val="{{ true }}">
-            <div style="display:grid;grid-template-columns:{{ gridCols }};column-gap:11px;min-width:0;padding:14px 28px;border-left:4px solid transparent;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
+            <div style="display:grid;grid-template-columns:{{ gridCols }};column-gap:11px;min-width:0;padding:14px 28px;border-left:4px solid transparent;background:var(--surface-card);border-bottom:1px solid var(--border-subtle);position:sticky;top:0;z-index:2;">
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Solic.</span>
               <sc-if value="{{ naoEhVeiculos }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Abertura</span></sc-if>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Ordem</span>
@@ -422,9 +422,9 @@
                    conclusão (SLA do contrato em destaque + Previsto da manutenção,
                    nessa ordem, sem Situação). -->
               <sc-if value="{{ ehPadrao }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Situação</span></sc-if>
-              <sc-if value="{{ ehClausula }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#B83A32;">SLA contrato</span></sc-if>
+              <sc-if value="{{ ehClausula }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);white-space:nowrap;">SLA contrato</span></sc-if>
               <sc-if value="{{ ehPadrao }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Previsão</span></sc-if>
-              <sc-if value="{{ ehClausula }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Previsto manut.</span></sc-if>
+              <sc-if value="{{ ehClausula }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);white-space:nowrap;">Previsto</span></sc-if>
               <sc-if value="{{ ehVeiculos }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Mobilização</span></sc-if>
               <sc-if value="{{ ehVeiculos }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Local</span></sc-if>
             </div>
@@ -451,20 +451,22 @@
                   <sc-if value="{{ r.semReserva }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
                 </span>
                 <span><span class="sans" style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:var(--radius-pill);background:var(--surface-sunken);font-size:12.5px;font-weight:600;color:var(--maas-petroleo);white-space:nowrap;"><span style="width:7px;height:7px;border-radius:50%;background:{{ r.servCor }};flex:none;"></span>{{ r.serv }}</span></span>
-                <!-- Col 8: Situação (padrão) OU SLA do contrato (cláusula, em
-                     destaque vermelho — é o prazo estourado que define o card). -->
+                <!-- Col 8: Situação (padrão) OU SLA do contrato (cláusula). Fonte
+                     sempre petróleo; o SINAL é a linha inferior VERMELHA (o SLA de
+                     cláusula está sempre estourado nesta lista). -->
                 <sc-if value="{{ r.ehPadrao }}" hint-placeholder-val="{{ true }}"><span><span class="sans" style="display:inline-block;padding:5px 13px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:600;color:{{ r.stStyle.fg }};background:{{ r.stStyle.bg }};border:1.5px solid {{ r.stStyle.bd }};white-space:nowrap;">{{ r.st }}</span></span></sc-if>
                 <sc-if value="{{ r.ehClausula }}">
-                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;">
+                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;padding-bottom:6px;border-bottom:2px solid #B83A32;">
                   <sc-if value="{{ r.temSla }}" hint-placeholder-val="{{ true }}">
-                    <span class="mono" style="font-size:12.5px;font-weight:700;color:#B83A32;white-space:nowrap;">{{ r.slaDia }}</span>
-                    <span class="mono" style="font-size:11.5px;color:rgba(184,58,50,.7);">{{ r.slaHora }}</span>
+                    <span class="mono" style="font-size:12.5px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;">{{ r.slaDia }}</span>
+                    <span class="mono" style="font-size:11.5px;color:var(--maas-petroleo-45);">{{ r.slaHora }}</span>
                   </sc-if>
                   <sc-if value="{{ r.semSla }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
                 </span>
                 </sc-if>
-                <!-- Col 9: Previsão (padrão) OU Previsto da manutenção (cláusula,
-                     tom neutro — informativo, para contrastar com o SLA). -->
+                <!-- Col 9: Previsão (padrão) OU Previsto da manutenção (cláusula).
+                     Fonte petróleo; linha inferior vermelha SÓ se o previsto também
+                     estiver ultrapassado (r.prevLinhaCor), senão linha neutra. -->
                 <sc-if value="{{ r.ehPadrao }}">
                 <span style="display:flex;flex-direction:column;gap:1px;min-width:0;">
                   <sc-if value="{{ r.temPrevisao }}" hint-placeholder-val="{{ true }}">
@@ -475,7 +477,7 @@
                 </span>
                 </sc-if>
                 <sc-if value="{{ r.ehClausula }}">
-                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;">
+                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;padding-bottom:6px;border-bottom:2px solid {{ r.prevLinhaCor }};">
                   <sc-if value="{{ r.temPrevisao }}" hint-placeholder-val="{{ true }}">
                     <span class="mono" style="font-size:12.5px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;">{{ r.previsaoDia }}</span>
                     <span class="mono" style="font-size:11.5px;color:var(--maas-petroleo-45);">{{ r.previsaoHora }}</span>
@@ -559,7 +561,7 @@
             </div>
           </sc-if>
           <sc-if value="{{ mecHasRows }}" hint-placeholder-val="{{ true }}">
-            <div style="display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(170px,1fr) 150px minmax(190px,1fr);column-gap:14px;padding:14px 32px;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
+            <div style="display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(170px,1fr) 150px minmax(190px,1fr);column-gap:14px;padding:14px 32px;background:var(--surface-card);border-bottom:1px solid var(--border-subtle);position:sticky;top:0;z-index:2;">
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Mecânico</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Função</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Status</span>
@@ -996,6 +998,9 @@ class Component extends DCLogic {
                  semSla: !r.sla,
                  slaDia: (r.sla || '').split(' ')[0] || '',
                  slaHora: (r.sla || '').split(' ')[1] || '',
+                 // Sinalização por LINHA inferior: SLA sempre vermelha (estourado);
+                 // Previsto vermelha só se também ultrapassado, senão neutra.
+                 prevLinhaCor: r.previsaoAtrasada ? '#B83A32' : 'var(--maas-petroleo-18)',
                  ssWeight: g ? '800' : '400' };
       });
 
