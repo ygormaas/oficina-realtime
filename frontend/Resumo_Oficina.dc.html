@@ -252,7 +252,13 @@
 
             <!-- Tile: Capacidade × demanda -->
             <div style="background:rgba(24,59,72,.035);border:1px solid var(--border-subtle);border-radius:14px;padding:15px 18px;display:flex;flex-direction:column;min-height:0;">
-              <div style="font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--maas-petroleo-45);margin-bottom:10px;flex:none;">Capacidade × demanda</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;flex:none;margin-bottom:10px;">
+                <span style="font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--maas-petroleo-45);">Capacidade × demanda</span>
+                <span onClick="{{ openMec }}" role="button" tabindex="0" title="Ver mão de obra — quem está em turno" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;" style-hover="opacity:.7;">
+                  <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--maas-petroleo-45);">Ver equipe</span>
+                  <span style="display:inline-flex;">{{ icMecDrill }}</span>
+                </span>
+              </div>
               <div style="display:flex;flex-direction:column;justify-content:space-between;flex:1;min-height:0;">
                 <div style="display:flex;gap:22px;">
                   <div><div style="font-size:34px;font-weight:800;color:var(--maas-petroleo);font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-1px;">{{ cap.backlog }}</div><div style="font-size:11px;font-weight:600;color:var(--maas-petroleo-60);text-transform:uppercase;letter-spacing:.4px;margin-top:6px;">O.S. abertas</div></div>
@@ -412,8 +418,12 @@
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Contrato</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Reserva</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Tipo</span>
-              <sc-if value="{{ naoEhVeiculos }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Situação</span></sc-if>
-              <sc-if value="{{ naoEhVeiculos }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Previsão</span></sc-if>
+              <!-- Col 8/9: padrão = Situação + Previsão · cláusula = duas datas de
+                   conclusão (Previsto da manutenção + SLA do contrato, sem Situação). -->
+              <sc-if value="{{ ehPadrao }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Situação</span></sc-if>
+              <sc-if value="{{ ehClausula }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Previsto</span></sc-if>
+              <sc-if value="{{ ehPadrao }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Previsão</span></sc-if>
+              <sc-if value="{{ ehClausula }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">SLA</span></sc-if>
               <sc-if value="{{ ehVeiculos }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Mobilização</span></sc-if>
               <sc-if value="{{ ehVeiculos }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Local</span></sc-if>
             </div>
@@ -440,14 +450,34 @@
                   <sc-if value="{{ r.semReserva }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
                 </span>
                 <span><span class="sans" style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:var(--radius-pill);background:var(--surface-sunken);font-size:12.5px;font-weight:600;color:var(--maas-petroleo);white-space:nowrap;"><span style="width:7px;height:7px;border-radius:50%;background:{{ r.servCor }};flex:none;"></span>{{ r.serv }}</span></span>
-                <sc-if value="{{ r.naoEhVeiculos }}"><span><span class="sans" style="display:inline-block;padding:5px 13px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:600;color:{{ r.stStyle.fg }};background:{{ r.stStyle.bg }};border:1.5px solid {{ r.stStyle.bd }};white-space:nowrap;">{{ r.st }}</span></span></sc-if>
-                <sc-if value="{{ r.naoEhVeiculos }}">
+                <!-- Col 8: Situação (padrão) OU Previsto (cláusula) -->
+                <sc-if value="{{ r.ehPadrao }}" hint-placeholder-val="{{ true }}"><span><span class="sans" style="display:inline-block;padding:5px 13px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:600;color:{{ r.stStyle.fg }};background:{{ r.stStyle.bg }};border:1.5px solid {{ r.stStyle.bd }};white-space:nowrap;">{{ r.st }}</span></span></sc-if>
+                <sc-if value="{{ r.ehClausula }}">
                 <span style="display:flex;flex-direction:column;gap:1px;min-width:0;">
                   <sc-if value="{{ r.temPrevisao }}" hint-placeholder-val="{{ true }}">
                     <span class="mono" style="font-size:12.5px;font-weight:700;color:{{ r.previsaoCor }};white-space:nowrap;">{{ r.previsaoDia }}</span>
                     <span class="mono" style="font-size:11.5px;color:{{ r.previsaoCorFraca }};">{{ r.previsaoHora }}</span>
                   </sc-if>
                   <sc-if value="{{ r.semPrevisao }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
+                </span>
+                </sc-if>
+                <!-- Col 9: Previsão (padrão) OU SLA do contrato (cláusula) -->
+                <sc-if value="{{ r.ehPadrao }}">
+                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;">
+                  <sc-if value="{{ r.temPrevisao }}" hint-placeholder-val="{{ true }}">
+                    <span class="mono" style="font-size:12.5px;font-weight:700;color:{{ r.previsaoCor }};white-space:nowrap;">{{ r.previsaoDia }}</span>
+                    <span class="mono" style="font-size:11.5px;color:{{ r.previsaoCorFraca }};">{{ r.previsaoHora }}</span>
+                  </sc-if>
+                  <sc-if value="{{ r.semPrevisao }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
+                </span>
+                </sc-if>
+                <sc-if value="{{ r.ehClausula }}">
+                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;">
+                  <sc-if value="{{ r.temSla }}" hint-placeholder-val="{{ true }}">
+                    <span class="mono" style="font-size:12.5px;font-weight:700;color:#B83A32;white-space:nowrap;">{{ r.slaDia }}</span>
+                    <span class="mono" style="font-size:11.5px;color:rgba(184,58,50,.7);">{{ r.slaHora }}</span>
+                  </sc-if>
+                  <sc-if value="{{ r.semSla }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
                 </span>
                 </sc-if>
                 <sc-if value="{{ r.ehVeiculos }}">
@@ -467,6 +497,88 @@
         <div style="display:flex;align-items:center;gap:10px;padding:16px 32px;border-top:1px solid var(--border-subtle);flex:none;background:var(--surface-card);">
           <span style="font-size:13px;color:var(--maas-petroleo-45);">Fonte: Central de Inteligência · dados recalculados a cada 5 min</span>
           <span onClick="{{ closeDetail }}" role="button" tabindex="0" style="margin-left:auto;font-size:14px;font-weight:700;color:#fff;background:var(--maas-petroleo);padding:11px 22px;border-radius:10px;cursor:pointer;" style-hover="background:var(--maas-petroleo-70);">Voltar ao painel</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Detalhamento da MÃO DE OBRA (clica em "Ver equipe" no card Capacidade ×
+       demanda). Modal próprio, mais simples que o de O.S.: a base não liga o
+       mecânico à ordem executada, então aqui é o efetivo em turno — quem são,
+       função, status e janela de trabalho. -->
+  <sc-if value="{{ mecDetailOpen }}">
+    <div onClick="{{ closeMec }}" style="position:fixed;inset:0;background:rgba(24,59,72,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:48px;">
+      <div onClick="{{ stop }}" style="width:min(1080px,92vw);height:84vh;background:var(--surface-page);border-radius:var(--radius-card-lg);box-shadow:0 32px 90px rgba(24,59,72,.4);display:flex;flex-direction:column;overflow:hidden;">
+        <!-- Cabeçalho -->
+        <div style="display:flex;align-items:center;gap:16px;padding:26px 32px;border-bottom:1px solid var(--border-subtle);flex:none;">
+          <span style="display:inline-flex;flex:none;width:52px;height:52px;border-radius:14px;background:var(--maas-verde-16);align-items:center;justify-content:center;">{{ icMecHead }}</span>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <div style="display:flex;align-items:baseline;gap:12px;">
+              <span style="font-size:24px;font-weight:800;letter-spacing:-.4px;color:var(--maas-petroleo);">Mão de obra</span>
+              <span style="font-size:14px;font-weight:700;color:var(--maas-verde-escuro-2);background:var(--maas-verde-16);padding:3px 11px;border-radius:var(--radius-pill);white-space:nowrap;">{{ mecCount }} em turno</span>
+            </div>
+            <span style="font-size:14px;color:var(--maas-petroleo-45);">{{ mecSubtitle }}</span>
+          </div>
+          <span style="margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:9px;background:var(--surface-sunken);border:1px solid var(--border-subtle);border-radius:var(--radius-pill);padding:0 16px;height:42px;min-width:280px;">
+            <span style="display:inline-flex;flex:none;">{{ icBusca }}</span>
+            <input value="{{ mecFiltroQ }}" onInput="{{ onBuscarMec }}" placeholder="Buscar nome, matrícula ou função"
+                   style="flex:1;border:none;outline:none;background:transparent;font-family:var(--font-sans);font-size:14px;color:var(--maas-petroleo);min-width:0;">
+          </span>
+          <span onClick="{{ closeMec }}" role="button" tabindex="0" title="Fechar" style="flex:none;width:40px;height:40px;border-radius:10px;border:1px solid var(--border-default);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--surface-sunken);">{{ icClose }}</span>
+        </div>
+        <!-- Filtro por status -->
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:13px 32px;border-bottom:1px solid var(--border-subtle);flex:none;background:var(--surface-card);">
+          <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;">Status</span>
+          <sc-for list="{{ mecStatusChips }}" as="c" hint-placeholder-count="3">
+            <span onClick="{{ c.onToggle }}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:var(--radius-pill);border:1.5px solid {{ c.bd }};background:{{ c.bg }};cursor:pointer;white-space:nowrap;" style-hover="border-color:{{ c.cor }};">
+              <span style="width:8px;height:8px;border-radius:50%;background:{{ c.cor }};flex:none;"></span>
+              <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }} · {{ c.n }}</span>
+            </span>
+          </sc-for>
+          <sc-if value="{{ mecTemFiltro }}">
+            <span onClick="{{ limparMec }}" role="button" tabindex="0" class="sans" style="margin-left:auto;font-size:13px;font-weight:700;color:var(--maas-verde-escuro-2);cursor:pointer;white-space:nowrap;" style-hover="opacity:.7;">Limpar filtros</span>
+          </sc-if>
+        </div>
+        <!-- Corpo -->
+        <div style="overflow-y:auto;overflow-x:auto;flex:1;min-height:0;">
+          <sc-if value="{{ mecSemFonte }}">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:80px 20px;">
+              <span style="display:inline-flex;">{{ icSearch }}</span>
+              <span style="font-size:17px;font-weight:700;color:var(--maas-petroleo-60);">Sem dados de efetivo no momento</span>
+              <span style="font-size:14px;color:var(--maas-petroleo-45);">A fonte de mão de obra (SRA_SRJ_Funcionarios) não retornou linhas neste ciclo.</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ mecVazioFiltro }}">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:80px 20px;">
+              <span style="display:inline-flex;">{{ icSearch }}</span>
+              <span style="font-size:17px;font-weight:700;color:var(--maas-petroleo-60);">Nenhum mecânico com esses filtros</span>
+              <span onClick="{{ limparMec }}" role="button" tabindex="0" class="sans" style="font-size:14px;font-weight:700;color:var(--maas-verde-escuro-2);cursor:pointer;" style-hover="opacity:.7;">Limpar filtros</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ mecHasRows }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(170px,1fr) 150px minmax(190px,1fr);column-gap:14px;padding:14px 32px;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Mecânico</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Função</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Status</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Turno</span>
+            </div>
+            <sc-for list="{{ mecRows }}" as="r" hint-placeholder-count="8">
+              <div style="display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(170px,1fr) 150px minmax(190px,1fr);column-gap:14px;padding:15px 32px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.barra }};align-items:center;" style-hover="background:var(--surface-sunken);">
+                <span style="display:flex;flex-direction:column;gap:1px;min-width:0;">
+                  <span class="sans" style="font-size:15px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.nome }}</span>
+                  <span class="mono" style="font-size:12px;color:var(--maas-petroleo-45);">mat. {{ r.matricula }}</span>
+                </span>
+                <span class="sans" style="font-size:13.5px;font-weight:600;color:var(--maas-petroleo-60);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.funcao }}</span>
+                <span><span class="sans" style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:700;color:{{ r.stFg }};background:{{ r.stBg }};border:1.5px solid {{ r.stBd }};white-space:nowrap;"><span style="width:7px;height:7px;border-radius:50%;background:{{ r.stCor }};flex:none;"></span>{{ r.status }}</span></span>
+                <span class="mono" style="font-size:13px;font-weight:600;color:var(--maas-petroleo-60);white-space:nowrap;">{{ r.turnoTxt }}</span>
+              </div>
+            </sc-for>
+          </sc-if>
+        </div>
+        <!-- Rodapé -->
+        <div style="display:flex;align-items:center;gap:10px;padding:16px 32px;border-top:1px solid var(--border-subtle);flex:none;background:var(--surface-card);">
+          <span style="font-size:13px;color:var(--maas-petroleo-45);">Fonte: SRA_SRJ_Funcionarios · efetivo em turno · a base não vincula mecânico à O.S.</span>
+          <span onClick="{{ closeMec }}" role="button" tabindex="0" style="margin-left:auto;font-size:14px;font-weight:700;color:#fff;background:var(--maas-petroleo);padding:11px 22px;border-radius:10px;cursor:pointer;" style-hover="background:var(--maas-petroleo-70);">Voltar ao painel</span>
         </div>
       </div>
     </div>
@@ -501,11 +613,14 @@ class Component extends DCLogic {
   state = { clock: '', scale: FIT_SCALE(), detailId: null, data: null, conn: 'connecting',
             // Filtros do drill-down. q = busca livre (S.S., O.S., placa, modelo,
             // descrição, data); serv/sit/per/prev/ctr = facetas. Zerados a cada abertura.
-            filtro: { q: '', serv: '', sit: '', per: '', prev: '', ctr: '' } };
+            filtro: { q: '', serv: '', sit: '', per: '', prev: '', ctr: '' },
+            // Detalhamento da mão de obra (modal próprio, independente do de O.S.).
+            mecOpen: false, mecFiltro: { q: '', status: '' } };
 
   // Abrir/fechar o detalhamento sempre por aqui, para os filtros não vazarem
   // de um KPI para o outro.
   abrirDetalhe(id) { this.setState({ detailId: id, filtro: { q:'', serv:'', sit:'', per:'', prev:'', ctr:'' } }); }
+  abrirMec() { this.setState({ mecOpen: true, mecFiltro: { q:'', status:'' } }); }
 
   componentDidMount() {
     this.tick();
@@ -737,13 +852,16 @@ class Component extends DCLogic {
       workingN: working, availN: avail,
       workingPct:(working/efetivo*100)+'%', availPct:(avail/efetivo*100)+'%', breakPct:(brk/efetivo*100)+'%' };
 
-    // O.S. mais antigas — derivado do drill-down "fora do prazo"
+    // O.S. mais antigas — as O.S. ABERTAS mais velhas (mesmo conjunto do bloco
+    // "Idade das O.S. abertas" logo acima). Antes vinha só de osForaPrazo, o que
+    // escondia O.S. antigas sem prazo (ex.: Implementação) e divergia do aging:
+    // o balde ">30 dias" contava uma O.S. que nunca aparecia aqui.
     const sla = (t) => {
       if (t==='Fora do Prazo') return { fg:'#B83A32', bg:'rgba(217,83,79,.10)', bd:'rgba(217,83,79,.35)' };
       if (t==='Sem SLA') return { fg:'var(--maas-petroleo-60)', bg:'transparent', bd:'var(--maas-petroleo-18)' };
       return { fg:'var(--maas-verde-escuro-2)', bg:'var(--maas-verde-16)', bd:'transparent' };
     };
-    const priorityRows = ((D.detalhes && D.detalhes.osForaPrazo) || [])
+    const priorityRows = ((D.detalhes && D.detalhes.osAbertas) || [])
       .filter(o => o.aberturaIso)
       .map(o => ({ ...o, dias: Math.max(0, Math.floor((agora - new Date(o.aberturaIso)) / 86400000)) }))
       .sort((a,b) => b.dias - a.dias)
@@ -768,6 +886,11 @@ class Component extends DCLogic {
       blocoOS, blocoClientes, tipoRows, tipoVeicRows, veicTiles, veicTotal, openVeic, icVeicDrill, agingRows, agingTotal, prevRows, cap, priorityRows,
       activeAlerts, hasAlerts: activeAlerts.length > 0, noAlerts: activeAlerts.length === 0, alertCount: activeAlerts.length,
       ...this.buildDetail(),
+      // Botão "Ver equipe" no card Capacidade × demanda (sempre visível) e o
+      // conteúdo do modal de mão de obra (só quando aberto).
+      openMec: () => this.abrirMec(),
+      icMecDrill: this.ic('maximize', 18, 'var(--maas-petroleo-25)'),
+      ...this.buildMecDetail(),
       icClock:    this.ic('clock',28,'var(--maas-verde)'),
       icOS:       this.ic('clipboard',22,'var(--maas-verde)'),
       icClientes: this.ic('users',22,'var(--maas-verde)'),
@@ -787,7 +910,7 @@ class Component extends DCLogic {
       qualidade:     { sev:'warn',    title:'Controle de qualidade',        icon:'badgeCheck', sub:(n)=> n + ' O.S. enviada(s) pela manutenção para o controle de qualidade' },
       retorno:       { sev:'warn',    title:'Retorno',                      icon:'rotate',     sub:()=> 'Indicador manual — sem fonte automática por enquanto' },
       clientesEsp:   { sev:'warn',    title:'Clientes esp. / serv. rápido', icon:'zap',        sub:(n)=> n ? n + ' clientes aguardando' : 'Nenhum cliente aguardando no momento' },
-      clausula:      { sev:'crit',    title:'Cláusula contratual',          icon:'fileText',   sub:(n)=> n + ' veículos em contrato com o SLA da cláusula estourado (exceto implementação)' },
+      clausula:      { sev:'crit',    title:'Cláusula contratual',          icon:'fileText',   sub:(n)=> n + ' veículos em contrato no status de fora do prazo e sem reserva apontada (exceto implementação)' },
       reservaLimite: { sev:'crit',    title:'Reservas no limite',           icon:'car',        sub:(n)=> n ? n + ' contratos no limite' : 'Nenhum contrato no limite de reservas' },
       sos:           { sev:'crit',    title:'S.O.S',                        icon:'lifebuoy',   sub:(n)=> n + ' chamados de socorro em atendimento' },
       veiculos:      { sev:'neutral', title:'Veículos em atendimento',      icon:'truck',      sub:(n)=> n + ' veículos na oficina — placa, modelo, O.S., S.S. e serviço' },
@@ -861,6 +984,15 @@ class Component extends DCLogic {
                  previsaoHora: (r.previsao || '').split(' ')[1] || '',
                  previsaoCor: r.previsaoAtrasada ? '#B83A32' : 'var(--maas-petroleo)',
                  previsaoCorFraca: r.previsaoAtrasada ? 'rgba(184,58,50,.7)' : 'var(--maas-petroleo-45)',
+                 // Modos de coluna: padrão (Situação+Previsão) · cláusula (duas
+                 // datas de conclusão: Previsto + SLA, sem Situação) · veículos.
+                 ehClausula: id === 'clausula',
+                 ehPadrao: !ehVeic && id !== 'clausula',
+                 // SLA de cláusula (TQB.SLAVencimentoCC) em dia/hora, coluna própria.
+                 temSla: !!r.sla,
+                 semSla: !r.sla,
+                 slaDia: (r.sla || '').split(' ')[0] || '',
+                 slaHora: (r.sla || '').split(' ')[1] || '',
                  ssWeight: g ? '800' : '400' };
       });
 
@@ -948,6 +1080,10 @@ class Component extends DCLogic {
       servChips, sitChips, perChips, prevChips, ctrChips, temFiltro,
       limparFiltros: () => this.setState({ filtro: { q:'', serv:'', sit:'', per:'', prev:'', ctr:'' } }),
       mostraDesc: id === 'osAbertas',
+      // Modos de coluna do cabeçalho (espelham os flags por linha): a cláusula
+      // troca Situação+Previsão por duas datas de conclusão (Previsto + SLA).
+      ehClausula: id === 'clausula',
+      ehPadrao: !ehVeic && id !== 'clausula',
       ehVeiculos: ehVeic, naoEhVeiculos: !ehVeic, gridCols,
       detailIconEl: this.ic(meta.icon, 26, sevCor.fg),
       sevFg: sevCor.fg,
@@ -957,6 +1093,78 @@ class Component extends DCLogic {
       icSearch: this.ic('search', 34, 'var(--maas-petroleo-25)'),
       stop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
       closeDetail: () => this.setState({ detailId: null }),
+    };
+  }
+
+  // ---- Drill-down da MÃO DE OBRA (card Capacidade × demanda) --------------
+  // Modal próprio, independente do de O.S.: lista o efetivo EM TURNO vindo do
+  // backend (detalhes.mecanicos — Trabalhando/Disponível/Intervalo). Sem coluna
+  // de O.S. porque a base não liga o mecânico à ordem que ele executa.
+  buildMecDetail() {
+    const stop = (e) => { if (e && e.stopPropagation) e.stopPropagation(); };
+    const closeMec = () => this.setState({ mecOpen: false });
+    if (!this.state.mecOpen) return { mecDetailOpen: false, closeMec, stop };
+
+    // Cor/estilo do selo por status (as 3 faixas da barra do card).
+    const stMap = {
+      'Trabalhando': { cor:'var(--maas-verde)',        fg:'var(--maas-verde-escuro-2)', bg:'var(--maas-verde-16)',   bd:'transparent' },
+      'Disponível':  { cor:'var(--maas-verde-escuro)', fg:'var(--maas-verde-escuro-2)', bg:'transparent',            bd:'var(--maas-petroleo-18)' },
+      'Intervalo':   { cor:'var(--maas-petroleo-45)',  fg:'var(--maas-petroleo-60)',    bg:'var(--surface-sunken)',  bd:'transparent' },
+    };
+    const stDe = (s) => stMap[s] || { cor:'var(--maas-petroleo-45)', fg:'var(--maas-petroleo-60)', bg:'var(--surface-sunken)', bd:'transparent' };
+
+    const raw = (this.state.data && this.state.data.detalhes && this.state.data.detalhes.mecanicos) || [];
+    const todas = raw.map(r => {
+      const st = stDe(r.status);
+      return { ...r, stCor: st.cor, stFg: st.fg, stBg: st.bg, stBd: st.bd,
+               barra: st.cor, turnoTxt: r.turno || '—' };
+    });
+
+    const f = this.state.mecFiltro || { q:'', status:'' };
+    const q = (f.q || '').trim().toLowerCase();
+    const alvo = (r) => [r.nome, r.matricula, r.funcao, r.status].join(' ').toLowerCase();
+    const rows = todas.filter(r => (!q || alvo(r).includes(q)) && (!f.status || r.status === f.status));
+
+    // Chips de status com contagem sobre o efetivo inteiro (ordem fixa).
+    const conta = new Map();
+    todas.forEach(r => conta.set(r.status, (conta.get(r.status) || 0) + 1));
+    const ordem = ['Trabalhando', 'Disponível', 'Intervalo'];
+    const setMec = (patch) => this.setState({ mecFiltro: { ...f, ...patch } });
+    const mecStatusChips = ordem.filter(s => conta.has(s)).map(s => {
+      const ativo = f.status === s, st = stDe(s);
+      return { k: s, n: conta.get(s), cor: st.cor,
+               bg: ativo ? 'var(--surface-card)' : 'transparent',
+               bd: ativo ? st.cor : 'var(--border-subtle)',
+               fg: ativo ? 'var(--maas-petroleo)' : 'var(--maas-petroleo-60)',
+               peso: ativo ? '700' : '600',
+               onToggle: () => setMec({ status: f.status === s ? '' : s }) };
+    });
+
+    const temFiltro = !!(q || f.status);
+    const partes = ordem.filter(s => conta.has(s)).map(s => conta.get(s) + ' ' + s.toLowerCase());
+    const mecSubtitle = temFiltro
+      ? (rows.length + ' de ' + todas.length + ' no efetivo em turno')
+      : (partes.length ? partes.join(' · ') + ' — a base não registra a O.S. de cada um'
+                       : 'Sem efetivo em turno no momento');
+
+    return {
+      mecDetailOpen: true,
+      mecRows: rows,
+      mecHasRows: rows.length > 0,
+      mecCount: todas.length,
+      mecSubtitle,
+      mecStatusChips,
+      mecTemFiltro: temFiltro,
+      mecSemFonte: todas.length === 0,
+      mecVazioFiltro: todas.length > 0 && rows.length === 0,
+      mecFiltroQ: f.q,
+      onBuscarMec: (e) => setMec({ q: e && e.target ? e.target.value : '' }),
+      limparMec: () => this.setState({ mecFiltro: { q:'', status:'' } }),
+      closeMec, stop,
+      icMecHead: this.ic('users', 26, 'var(--maas-verde-escuro-2)'),
+      icClose: this.ic('x', 22, 'var(--maas-petroleo)'),
+      icBusca: this.ic('search', 17, 'var(--maas-petroleo-45)'),
+      icSearch: this.ic('search', 34, 'var(--maas-petroleo-25)'),
     };
   }
 }

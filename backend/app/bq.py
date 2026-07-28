@@ -136,9 +136,17 @@ def fetch_cadastro_bem() -> list[dict]:
 
 def fetch_mecanicos() -> list[dict]:
     """Efetivo de mecânicos (SRA_SRJ_Funcionarios) — StatusFinal em
-    Disponível / Trabalhando / Intervalo (bloco Mão de Obra). Ver kpis.py."""
+    Disponível / Trabalhando / Intervalo (bloco Mão de Obra). Ver kpis.py.
+
+    Além do StatusFinal (que alimenta a CONTAGEM do card), traz o NOME
+    (RA_NOMECMP), a função (RJ_DESC), o centro de custo (RA_CC) e os horários
+    de turno (HoraEntrada/Saida 1 e 2) para o DETALHAMENTO "quem são" —
+    _mecanicos_detalhe em kpis.py. A base NÃO liga o mecânico à O.S. que ele
+    executa (o SIAN teria esse papel, mas o registro é raro e defasado), então
+    o detalhamento não tem coluna de O.S. — só efetivo, status e turno."""
     sql = f"""
-        SELECT RA_MAT, StatusFinal
+        SELECT RA_MAT, RA_NOMECMP, RJ_DESC, RA_CC, StatusFinal,
+               HoraEntrada1, HoraSaida1, HoraEntrada2, HoraSaida2
         FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.SRA_SRJ_Funcionarios`
         LIMIT {config.BQ_MAX_ROWS}
     """

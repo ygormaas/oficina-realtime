@@ -300,6 +300,68 @@ def _mecanicos_efetivo(mec_rows: list[dict] | None) -> dict | None:
             "pausa":       cnt("Intervalo")}
 
 
+_ROMANOS = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII"}
+
+
+def _titulo(v: Any) -> str:
+    """Title Case preservando numerais romanos (NIVEL II → Nível... 'Nivel II',
+    não 'Ii'). A fonte vem toda em CAIXA ALTA e sem acento."""
+    palavras = []
+    for w in _s(v).split():
+        palavras.append(w.upper() if w.upper() in _ROMANOS else w.title())
+    return " ".join(palavras)
+
+
+def _hhmm(v: Any) -> str:
+    """'07:00:00' / '07:00' → '07:00'. Vazio/00:00 vira ''."""
+    s = _s(v)
+    if not s or s.startswith("00:00"):
+        return ""
+    return s[:5]
+
+
+def _turno(row: dict) -> str:
+    """Janela de trabalho do funcionário a partir dos pares Entrada/Saída 1 e 2
+    (a base guarda dois blocos: manhã e tarde). Ex.: '07:00–11:00 · 12:00–15:20'.
+    Blocos vazios são omitidos."""
+    blocos = []
+    for ent, sai in (("HoraEntrada1", "HoraSaida1"), ("HoraEntrada2", "HoraSaida2")):
+        e, s = _hhmm(row.get(ent)), _hhmm(row.get(sai))
+        if e or s:
+            blocos.append(f"{e or '—'}–{s or '—'}")
+    return " · ".join(blocos)
+
+
+# Status do efetivo que aparecem no card (as 3 faixas da barra Capacidade ×
+# demanda). "Fora do horário" NÃO entra: o card conta só quem está em turno.
+_MEC_STATUS_ORDEM = {"Trabalhando": 0, "Disponível": 1, "Intervalo": 2}
+
+
+def _mecanicos_detalhe(mec_rows: list[dict] | None) -> list[dict]:
+    """Detalhamento "quem são" da mão de obra: uma linha por funcionário EM
+    TURNO (StatusFinal em Trabalhando/Disponível/Intervalo — os mesmos que o
+    card conta), com nome, função, centro de custo, status e janela de turno.
+
+    NÃO há coluna de O.S.: a base não registra qual ordem cada mecânico executa
+    de forma viva (ver fetch_mecanicos em bq.py). Ordena por status (Trabalhando,
+    Disponível, Intervalo) e depois por nome. Lista vazia sem a fonte."""
+    linhas = []
+    for r in mec_rows or []:
+        status = _s(r.get("StatusFinal"))
+        if status not in _MEC_STATUS_ORDEM:
+            continue
+        linhas.append({
+            "matricula": _s(r.get("RA_MAT")),
+            "nome":      _titulo(r.get("RA_NOMECMP")) or "—",
+            "funcao":    _titulo(r.get("RJ_DESC")) or "—",
+            "cc":        _s(r.get("RA_CC")),
+            "status":    status,
+            "turno":     _turno(r),
+        })
+    return sorted(linhas, key=lambda x: (_MEC_STATUS_ORDEM.get(x["status"], 9),
+                                         x["nome"]))
+
+
 def _reservas_limite(mon_rows: list[dict] | None,
                      bem_rows: list[dict] | None) -> list[dict] | None:
     """Reservas no Limite = medida DAX Qtd_Res_Limite (validado =2 em 23/07/2026).
@@ -498,6 +560,16 @@ def _reserva_de_mon(mon: dict | None, bem_idx: dict | None) -> tuple[str, str, s
     return "", "", ""
 
 
+def _sla_cc_txt(mon: dict | None) -> str:
+    """Prazo do SLA de CLÁUSULA (TQB.SLAVencimentoCC) em 'dd/mm HH:MM' — o
+    "SLA" da linha `Previsto · SLA` no drill-down da cláusula. É a hora LOCAL do
+    vencimento (abertura + SZT_Contratos.Sla) rotulada como UTC; como na
+    abertura, NÃO convertemos fuso — formatamos o relógio como está. Vazio
+    quando o contrato não tem SLA de cláusula (Sla em branco → campo nulo)."""
+    dt = _dt_iso((mon or {}).get("SLAVencimentoCC"))
+    return dt.strftime("%d/%m/%Y %H:%M") if dt else ""
+
+
 def _detalhe_de_mon(mon: dict, bem_idx: dict | None = None,
                     man_por_ordem: dict | None = None,
                     agora: datetime | None = None) -> dict:
@@ -526,6 +598,7 @@ def _detalhe_de_mon(mon: dict, bem_idx: dict | None = None,
         "desc":        "",   # a descrição mora no STJ; estas linhas vêm da TQB
         "previsao":    prevTxt,
         "previsaoAtrasada": prevAtraso,
+        "sla":         _sla_cc_txt(mon),   # prazo do SLA de cláusula (drill-down)
         "mobil":       "Mobilizado" if _mobilizado_mon(mon) else "Não mobilizado",
         "local":       "",   # local (interna/externa) só no detalhamento de veículos
         "serv":        servico,
@@ -561,6 +634,7 @@ def _linha_detalhe(row: dict, bem_idx: dict | None = None,
         "desc":        _descricao_servico(row),
         "previsao":    prevTxt,
         "previsaoAtrasada": prevAtraso,
+        "sla":         _sla_cc_txt(mon),   # prazo do SLA de cláusula (drill-down)
         "mobil":       "Mobilizado" if _mobilizado(row) else "Não mobilizado",
         "local":       _local_veiculo(row),
         "serv":        _nome_servico(row),
@@ -716,18 +790,32 @@ def build_payload(man_rows: list[dict],
     # --- Retorno (qtdRep=0 e xRetorn = '1') ---------------------------------
     retorno = [r for r in abertas if _s(r.get("xRetorn")) == "1"]
 
-    # --- Cláusula contratual (bens distintos — DAX Claus_Contrato_Fora_prazo)
-    # SLAUltrapassadoCC fora + bem com contrato no cadastro + xss vazio +
-    # serviço ≠ implementação + statusBem do bem ∉ {08,02} + qtdRep=0.
+    # --- Cláusula contratual (bens distintos) --------------------------------
+    # Regra do painel de REFERÊNCIA (manutest / tooltip da operação, validado
+    # =14 em 28/07/2026): "contagem distinta dos veículos que possuem contrato e
+    # entraram para o status de fora do prazo, considerando que não foi apontado
+    # veículo reserva". Traduzindo para as colunas:
+    #   1) possui contrato       -> ST9.numeroContrato ≠ ''
+    #   2) status de fora do prazo -> SLAUltrapassadoCC = 'Fora do Prazo'
+    #      (o FLAG da ingestão — o tooltip fala em "status", e é o que o painel de
+    #      referência usa; ao vivo `agora > SLAVencimentoCC` dá o mesmo 14 hoje,
+    #      mas seguimos o flag para acompanhar a referência. SLAVencimentoCC, por
+    #      sua vez, é abertura + SZT_Contratos.Sla — ver [[clausula-contratual-fonte]].)
+    #   3) sem veículo reserva apontado -> TQB.Xbemre vazio
+    # Implementação não conta (convenção da cláusula). NÃO aplica os antigos
+    # guards de xss / statusBem / qtdRep: eles derrubavam a conta para 12-13 e
+    # não constam da definição da referência.
     clausula_bem, clausula_rows = set(), []
     for r in abertas:
         m = mon_por_ordem.get(_s(r.get("ordem")))
-        if not m or not _sla_fora(m, "SLAVencimentoCC", agora):
+        if not m or "FORA" not in _norm(m.get("SLAUltrapassadoCC")):
             continue
-        if _s(m.get("xss")) != "" or _norm(m.get("nmServ")) == "IMPLEMENTACAO":
+        if _norm(m.get("nmServ")) == "IMPLEMENTACAO":
+            continue
+        if _s(m.get("Xbemre")) != "":          # veículo reserva apontado → não conta
             continue
         b = bem_por_cod.get(_s(r.get("codBem")))
-        if not b or _s(b.get("numeroContrato")) == "" or _s(b.get("statusBem")) in ("08", "02"):
+        if not b or _s(b.get("numeroContrato")) == "":
             continue
         cod = _s(r.get("codBem"))
         if cod not in clausula_bem:
@@ -812,6 +900,9 @@ def build_payload(man_rows: list[dict],
             for r in abertas], desc=True),
         "reservaLimite": _ordenar_por_abertura(
             _detalhes_reserva(reserva_grupos, bem_idx, man_por_ordem, agora)),
+        # Mão de obra: "quem são" do efetivo em turno (sem O.S. — a base não liga
+        # mecânico à ordem executada; ver _mecanicos_detalhe / fetch_mecanicos).
+        "mecanicos":   _mecanicos_detalhe(mecanicos_rows),
     }
 
     return {
