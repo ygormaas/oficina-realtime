@@ -419,11 +419,12 @@
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Reserva</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Tipo</span>
               <!-- Col 8/9: padrão = Situação + Previsão · cláusula = duas datas de
-                   conclusão (Previsto da manutenção + SLA do contrato, sem Situação). -->
+                   conclusão (SLA do contrato em destaque + Previsto da manutenção,
+                   nessa ordem, sem Situação). -->
               <sc-if value="{{ ehPadrao }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Situação</span></sc-if>
-              <sc-if value="{{ ehClausula }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Previsto</span></sc-if>
+              <sc-if value="{{ ehClausula }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#B83A32;">SLA contrato</span></sc-if>
               <sc-if value="{{ ehPadrao }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Previsão</span></sc-if>
-              <sc-if value="{{ ehClausula }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">SLA</span></sc-if>
+              <sc-if value="{{ ehClausula }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Previsto manut.</span></sc-if>
               <sc-if value="{{ ehVeiculos }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Mobilização</span></sc-if>
               <sc-if value="{{ ehVeiculos }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Local</span></sc-if>
             </div>
@@ -450,18 +451,20 @@
                   <sc-if value="{{ r.semReserva }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
                 </span>
                 <span><span class="sans" style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:var(--radius-pill);background:var(--surface-sunken);font-size:12.5px;font-weight:600;color:var(--maas-petroleo);white-space:nowrap;"><span style="width:7px;height:7px;border-radius:50%;background:{{ r.servCor }};flex:none;"></span>{{ r.serv }}</span></span>
-                <!-- Col 8: Situação (padrão) OU Previsto (cláusula) -->
+                <!-- Col 8: Situação (padrão) OU SLA do contrato (cláusula, em
+                     destaque vermelho — é o prazo estourado que define o card). -->
                 <sc-if value="{{ r.ehPadrao }}" hint-placeholder-val="{{ true }}"><span><span class="sans" style="display:inline-block;padding:5px 13px;border-radius:var(--radius-pill);font-size:12.5px;font-weight:600;color:{{ r.stStyle.fg }};background:{{ r.stStyle.bg }};border:1.5px solid {{ r.stStyle.bd }};white-space:nowrap;">{{ r.st }}</span></span></sc-if>
                 <sc-if value="{{ r.ehClausula }}">
                 <span style="display:flex;flex-direction:column;gap:1px;min-width:0;">
-                  <sc-if value="{{ r.temPrevisao }}" hint-placeholder-val="{{ true }}">
-                    <span class="mono" style="font-size:12.5px;font-weight:700;color:{{ r.previsaoCor }};white-space:nowrap;">{{ r.previsaoDia }}</span>
-                    <span class="mono" style="font-size:11.5px;color:{{ r.previsaoCorFraca }};">{{ r.previsaoHora }}</span>
+                  <sc-if value="{{ r.temSla }}" hint-placeholder-val="{{ true }}">
+                    <span class="mono" style="font-size:12.5px;font-weight:700;color:#B83A32;white-space:nowrap;">{{ r.slaDia }}</span>
+                    <span class="mono" style="font-size:11.5px;color:rgba(184,58,50,.7);">{{ r.slaHora }}</span>
                   </sc-if>
-                  <sc-if value="{{ r.semPrevisao }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
+                  <sc-if value="{{ r.semSla }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
                 </span>
                 </sc-if>
-                <!-- Col 9: Previsão (padrão) OU SLA do contrato (cláusula) -->
+                <!-- Col 9: Previsão (padrão) OU Previsto da manutenção (cláusula,
+                     tom neutro — informativo, para contrastar com o SLA). -->
                 <sc-if value="{{ r.ehPadrao }}">
                 <span style="display:flex;flex-direction:column;gap:1px;min-width:0;">
                   <sc-if value="{{ r.temPrevisao }}" hint-placeholder-val="{{ true }}">
@@ -473,11 +476,11 @@
                 </sc-if>
                 <sc-if value="{{ r.ehClausula }}">
                 <span style="display:flex;flex-direction:column;gap:1px;min-width:0;">
-                  <sc-if value="{{ r.temSla }}" hint-placeholder-val="{{ true }}">
-                    <span class="mono" style="font-size:12.5px;font-weight:700;color:#B83A32;white-space:nowrap;">{{ r.slaDia }}</span>
-                    <span class="mono" style="font-size:11.5px;color:rgba(184,58,50,.7);">{{ r.slaHora }}</span>
+                  <sc-if value="{{ r.temPrevisao }}" hint-placeholder-val="{{ true }}">
+                    <span class="mono" style="font-size:12.5px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;">{{ r.previsaoDia }}</span>
+                    <span class="mono" style="font-size:11.5px;color:var(--maas-petroleo-45);">{{ r.previsaoHora }}</span>
                   </sc-if>
-                  <sc-if value="{{ r.semSla }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
+                  <sc-if value="{{ r.semPrevisao }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
                 </span>
                 </sc-if>
                 <sc-if value="{{ r.ehVeiculos }}">
