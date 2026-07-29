@@ -36,7 +36,9 @@ Fontes alternáveis por `DATA_SOURCE` no `backend/.env`:
   `detalhes`, `mecanicos`, `veiculos`, `geradoEm`) são compartilhadas entre
   `kpis.py`, `mock.py` e o `renderVals()` do frontend. Mudou de um lado, mude
   dos três. (`veiculos` = {mobilizados, naoMobilizados}; ainda sem bloco no
-  frontend novo.)
+  frontend novo.) `detalhes.mecanicos` = lista do efetivo em turno
+  {matricula, nome, funcao, cc, status, turno} — alimenta o drill-down "Ver
+  equipe" (mock precisa bater com a contagem de `mecanicos`).
 - **Identidade visual intocada**: paleta petróleo/verde MAAS, tipografia e
   componentes do protótipo vBeta. Novos elementos usam as variáveis CSS
   existentes (`--maas-*`, `--surface-*`), nunca cores hardcoded novas.
@@ -82,8 +84,17 @@ Fontes alternáveis por `DATA_SOURCE` no `backend/.env`:
   código do serviço. Usar a mesma fonte na coluna "Tipo" e na regra de SLA
   evita a linha exibir um serviço e ser classificada por outro
   (ver `_servico_da_ordem`).
-- **Cláusula** = DISTINCTCOUNT `codBem`: `agora > SLAVencimentoCC` (AO VIVO),
-  `xss=''`, `nmServ≠Implementacao`, ST9 `numeroContrato<>''` e `statusBem ∉ {08,02}`, qtdRep=0.
+- **Cláusula** = DISTINCTCOUNT `codBem` — regra do painel de REFERÊNCIA (manutest,
+  tooltip da operação, validado =14 em 28/07/2026): veículo que **possui contrato**
+  (`ST9.numeroContrato<>''`) + **status de fora do prazo** (`SLAUltrapassadoCC='Fora
+  do Prazo'`, o FLAG da ingestão) + **sem reserva apontada** (`TQB.Xbemre` vazio),
+  excluindo Implementação. NÃO usa mais o recálculo ao vivo nem os guards de
+  `xss`/`statusBem`/`qtdRep` (davam 12-13, fora da definição da referência). O flag
+  `SLAUltrapassadoCC` = `abertura + SZT_Contratos.Sla` (duração `HHHH:MM`, join
+  `ST9.numeroContrato = SZT_Contratos.Num`); ao vivo `agora > SLAVencimentoCC` dá o
+  mesmo 14 hoje, mas seguimos o flag para acompanhar a referência. O drill-down tem
+  duas colunas de conclusão: **Previsto** (`dtMpFim`) e **SLA** (`SLAVencimentoCC`),
+  sem coluna Situação. Ver `_sla_cc_txt` e [[clausula-contratual-fonte]].
 - **Controle de Qualidade** = COUNT ordem, `tipoRet='A'`.
 - **Retorno** = COUNT, qtdRep=0 e `xRetorn='1'`.
 - **Clientes Esp.** = DISTINCTCOUNT codBem, qtdRep=0 e TQB `Xesper='S'`.
@@ -91,7 +102,16 @@ Fontes alternáveis por `DATA_SOURCE` no `backend/.env`:
 - **S.S. Aguardando** = COUNT TQB onde `StatusOS` NÃO contém "Aberta".
 - **Veículos Mob/Não** = DISTINCTCOUNT codBem por TQB `Xcontr` preenchido/vazio.
 - **Mão de Obra** = DISTINCTCOUNT `SRA_SRJ_Funcionarios.RA_MAT` por `StatusFinal`
-  (Disponível/Trabalhando/Intervalo).
+  (Disponível/Trabalhando/Intervalo). O drill-down "Ver equipe" (card Capacidade
+  × demanda) lista o efetivo EM TURNO — nome (`RA_NOMECMP`), função (`RJ_DESC`),
+  status, turno (`HoraEntrada/Saida 1 e 2`) e a **O.S./S.S. em execução**, em
+  `detalhes.mecanicos` (`_mecanicos_detalhe`). A O.S./S.S. vem do **apontamento de
+  mão de obra `STL_Custo`** (`fetch_mecanicos_os`): `tipoReg='M'`, `seqrela='0'`,
+  `ordem` entre as abertas (join `key_filial_ordem_plano` com `STJ_Manutencao`);
+  `STL.ordem`=O.S., `STJ.solici`=S.S. É a MESMA fonte que define "Trabalhando" na
+  view SRA, então "Trabalhando" mostra a(s) O.S. e "Disponível" fica "—". O SIAN
+  (`SILVER_SIAN_SUPABASE_*`) foi descartado (registro raro/defasado). Ver
+  [[mao-de-obra-detalhe-sian]].
 - **Preventivas** = DISTINCTCOUNT `STF_Status_Manutencao.codBem` por `statusManutencao`
   (Atrasado / Período Final / Período Inicial).
 - **Reservas no Limite** = medida `Qtd_Res_Limite` (validado =2 em 23/07/2026).

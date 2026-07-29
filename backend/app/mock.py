@@ -16,7 +16,9 @@ def _linha(ab: datetime, ss: str, os_: str, placa: str, mobil: bool, serv: str, 
     return {
         "abertura": ab.strftime("%d/%m %H:%M"),
         "aberturaIso": ab.isoformat(),
-        "ss": ss, "os": os_, "placa": placa, "contrato": "",
+        # codBem: na base é o código do veículo; no mock não há bem real, então
+        # usamos a placa como stand-in só para a coluna não ficar vazia na demo.
+        "ss": ss, "os": os_, "codBem": placa, "placa": placa, "contrato": "",
         # Reserva que substitui o veículo parado — ver _reserva_de_mon em kpis.py.
         "reserva": reserva, "reservaNome": "", "reservaSt": reserva_st,
         "desc": "",   # descrição do serviço (STJ.observa)
@@ -55,7 +57,12 @@ def build_mock_payload() -> dict:
         _linha(d(0, 4), "030879", "036711", "TXJ6L25", False, "Socorro", "Crítico"),
     ]
     qualidade = [_linha(d(1, 1), "030842", "036671", "TUF3H82", True, "Corretiva", "No prazo")]
-    clausula = [{**l, "st": "Crítico"} for l in fora]
+    # Cláusula (demo): reaproveita as linhas fora do prazo e preenche os dois
+    # prazos do drill-down (Previsto · SLA). No real, previsao=STJ dtMpFim e
+    # sla=TQB.SLAVencimentoCC (abertura + SZT.Sla) — ver kpis._sla_cc_txt.
+    clausula = [{**l, "st": "Crítico",
+                 "previsao": l["abertura"],
+                 "sla": l["abertura"]} for l in fora]
 
     # leve variação a cada ciclo para o "ao vivo" ficar visível na demo
     j = lambda n, amp=2: max(0, n + random.randint(-amp, amp))
@@ -76,7 +83,9 @@ def build_mock_payload() -> dict:
             "prevFinal": 8,
             "prevInicial": 8,
         },
-        "mecanicos": {"trabalhando": 11, "disponivel": 6, "pausa": 0},
+        # Bate com as 6 linhas de detalhes.mecanicos abaixo (3 trabalhando + 3
+        # disponível) — no BigQuery real card e detalhamento saem da mesma fonte.
+        "mecanicos": {"trabalhando": 3, "disponivel": 3, "pausa": 0},
         "tipoServico": [
             {"k": "Implementação", "n": j(97, 3)},
             {"k": "Corretiva", "n": j(18)},
@@ -98,5 +107,16 @@ def build_mock_payload() -> dict:
             "reservaLimite": [],
             "sos": sos,
             "retorno": [],
+            # Mão de obra: efetivo em turno + O.S./S.S. que está trabalhando (vem
+            # de STL_Custo no real; ver _mecanicos_detalhe em kpis.py). Quem está
+            # "Trabalhando" tem apontamento aberto; "Disponível" fica sem O.S.
+            "mecanicos": [
+                {"matricula": "04480", "nome": "Abraão Carlos Barbosa",  "funcao": "Mecânico Nível II",  "cc": "104101002", "status": "Trabalhando", "turno": "06:00–11:00 · 12:00–15:48", "os": "038035", "ss": "032643"},
+                {"matricula": "09043", "nome": "Augusto Oliveira De Sousa","funcao": "Mecânico Nível II", "cc": "104101002", "status": "Trabalhando", "turno": "06:00–11:00 · 12:00–15:48", "os": "037543, 038200, 038213", "ss": "032156, 032802, 032804"},
+                {"matricula": "09044", "nome": "Jainara Da Silva Reis",    "funcao": "Eletricista Nível II","cc": "104101003","status": "Trabalhando", "turno": "06:00–12:00 · 13:10–14:30", "os": "038106", "ss": "032712"},
+                {"matricula": "20674", "nome": "Jefferson Batista Dos Santos","funcao": "Mecânico Nível II","cc": "104101002","status": "Disponível","turno": "07:00–11:00 · 12:00–15:20", "os": "", "ss": ""},
+                {"matricula": "08462", "nome": "Marcos Antonio Ribeiro",   "funcao": "Eletricista Nível II","cc": "104101001","status": "Disponível","turno": "06:00–11:00 · 12:00–14:20", "os": "", "ss": ""},
+                {"matricula": "08824", "nome": "Wadson De Souza Cardoso",   "funcao": "Mecânico Nível II",  "cc": "104101002","status": "Disponível","turno": "07:00–12:00 · 13:00–16:48", "os": "", "ss": ""},
+            ],
         },
     }

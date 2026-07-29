@@ -58,6 +58,12 @@ def fetch_mecanicos() -> list[dict]:
     return _opcional("SRA_SRJ_Funcionarios.csv", "efetivo de mecânicos")
 
 
+def fetch_mecanicos_os() -> list[dict]:
+    """Apontamento de mão de obra (STL_Custo) — O.S./S.S. por matrícula. Sem CSV
+    local, o detalhamento de mão de obra fica sem a coluna de O.S."""
+    return _opcional("STL_Custo.csv", "O.S./S.S. por mecânico")
+
+
 def fetch_preventivas() -> list[dict]:
     return _opcional("STF_Status_Manutencao.csv", "preventivas")
 

@@ -136,14 +136,44 @@ def fetch_cadastro_bem() -> list[dict]:
 
 def fetch_mecanicos() -> list[dict]:
     """Efetivo de mecânicos (SRA_SRJ_Funcionarios) — StatusFinal em
-    Disponível / Trabalhando / Intervalo (bloco Mão de Obra). Ver kpis.py."""
+    Disponível / Trabalhando / Intervalo (bloco Mão de Obra). Ver kpis.py.
+
+    Além do StatusFinal (que alimenta a CONTAGEM do card), traz o NOME
+    (RA_NOMECMP), a função (RJ_DESC), o centro de custo (RA_CC) e os horários
+    de turno (HoraEntrada/Saida 1 e 2) para o DETALHAMENTO "quem são" —
+    _mecanicos_detalhe em kpis.py. A O.S./S.S. em que o mecânico trabalha vem
+    de fetch_mecanicos_os (STL_Custo), não daqui."""
     sql = f"""
-        SELECT RA_MAT, StatusFinal
+        SELECT RA_MAT, RA_NOMECMP, RJ_DESC, RA_CC, StatusFinal,
+               HoraEntrada1, HoraSaida1, HoraEntrada2, HoraSaida2
         FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.SRA_SRJ_Funcionarios`
         LIMIT {config.BQ_MAX_ROWS}
     """
     rows = _rows(sql)
     log.info("SRA_SRJ_Funcionarios: %d linhas", len(rows))
+    return rows
+
+
+def fetch_mecanicos_os() -> list[dict]:
+    """Apontamento de mão de obra ABERTO por matrícula (STL_Custo): a O.S. e a
+    S.S. em que cada mecânico está trabalhando AGORA.
+
+    É a MESMA fonte que a view SRA usa para decidir o status 'Trabalhando'
+    (mecânico está "ocupado"): apontamento `tipoReg='M'`, `seqrela='0'`, com a
+    `ordem` entre as O.S. ainda abertas (join `key_filial_ordem_plano` com
+    STJ_Manutencao). `STL_Custo.ordem` é o número de O.S. do painel; a `solici`
+    da STJ_Manutencao é a S.S. Ver _mecanicos_detalhe em kpis.py."""
+    sql = f"""
+        SELECT DISTINCT STL.Matricula AS matricula, STL.ordem AS os,
+               STJ.solici AS ss
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.STL_Custo` STL
+        JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.{config.BQ_VIEW_MANUTENCAO}` STJ
+          ON STL.key_filial_ordem_plano = STJ.key_filial_ordem_plano
+        WHERE STL.tipoReg = 'M' AND STL.seqrela = '0' AND STL.Matricula <> '00001'
+        LIMIT {config.BQ_MAX_ROWS}
+    """
+    rows = _rows(sql)
+    log.info("STL_Custo (apontamento aberto): %d linhas", len(rows))
     return rows
 
 
