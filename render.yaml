@@ -1,0 +1,23 @@
+# Blueprint do Render — Central de Inteligência / Resumo Oficina.
+# Conecte o repo no Render (New > Blueprint) e ele lê este arquivo.
+# O que NÃO fica aqui (por segurança, definir no dashboard):
+#   - ACCESS_TOKEN  -> Environment (valor longo e aleatório; o link do painel
+#                      vira  https://<app>.onrender.com/?token=<valor>)
+#   - service-account-key.json -> Secret Files (montado em /etc/secrets/…)
+services:
+  - type: web
+    name: painel-oficina
+    runtime: python
+    plan: free                       # UptimeRobot pinga /healthz a cada 5 min p/ não dormir
+    region: oregon                   # ajuste se quiser mais perto do BigQuery
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz        # aberto (sem token) — Render e UptimeRobot usam
+    autoDeploy: true
+    envVars:
+      - key: DATA_SOURCE
+        value: bigquery
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/secrets/service-account-key.json
+      - key: ACCESS_TOKEN
+        sync: false                  # definir manualmente no dashboard (secreto)

@@ -72,6 +72,15 @@ MECANICOS_PAUSA       = _int("MECANICOS_PAUSA", 0)
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = _int("PORT", 8000)
 
+# --- Acesso (proteção do link público) ---------------------------------------
+# Se definido, os DADOS (página, /api/resumo e /ws) exigem ?token=<valor> na
+# URL. Vazio (padrão) = aberto — para uso local / rede interna. Em produção
+# (Render), defina ACCESS_TOKEN com um valor longo e aleatório; o link do painel
+# vira  https://…/?token=<valor>  (é o que se cola no "Link Externo" do
+# ReportLoad). Token na URL, não cookie: cookie de terceiro é bloqueado dentro
+# de iframe. `/healthz` fica SEMPRE aberto (para o monitor UptimeRobot).
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN", "").strip()
+
 # Caminho do frontend servido pelo próprio backend (um servidor só).
 FRONTEND_DIR = Path(
     os.getenv("FRONTEND_DIR", Path(__file__).resolve().parents[2] / "frontend")

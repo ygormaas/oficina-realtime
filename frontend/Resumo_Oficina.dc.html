@@ -717,7 +717,11 @@ class Component extends DCLogic {
   // ---- Camada WebSocket: recebe payloads e re-renderiza só o que mudou ----
   connectWS() {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const ws = new WebSocket(proto + '://' + location.host + '/ws');
+    // Repassa o token da URL (?token=…) para o WS. Em produção o link do painel
+    // é …/?token=<valor>; o backend exige o mesmo token no handshake do /ws.
+    const tok = new URLSearchParams(location.search).get('token');
+    const qs = tok ? ('?token=' + encodeURIComponent(tok)) : '';
+    const ws = new WebSocket(proto + '://' + location.host + '/ws' + qs);
     this._ws = ws;
     ws.onopen = () => {
       this.setState({ conn: 'live' });

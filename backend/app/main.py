@@ -16,11 +16,12 @@ Rotas:
 from __future__ import annotations
 
 import asyncio
+import hmac
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import config, kpis, mock
@@ -31,6 +32,25 @@ log = logging.getLogger("oficina.server")
 # ------------------------- estado compartilhado -----------------------------
 ultimo_payload: dict | None = None      # último resultado calculado
 clientes: set[WebSocket] = set()        # painéis conectados agora
+
+
+# --------------------------- proteção de acesso -----------------------------
+def _token_ok(token: str) -> bool:
+    """True se o acesso é permitido. Sem ACCESS_TOKEN configurado, tudo é aberto
+    (uso local/rede). Com token, exige o valor exato (comparação em tempo
+    constante). Ver config.ACCESS_TOKEN."""
+    if not config.ACCESS_TOKEN:
+        return True
+    return bool(token) and hmac.compare_digest(token, config.ACCESS_TOKEN)
+
+
+_PAGINA_NEGADA = (
+    "<!doctype html><meta charset='utf-8'>"
+    "<title>Acesso restrito</title>"
+    "<div style=\"font:600 18px system-ui;color:#183B48;display:flex;"
+    "height:100vh;align-items:center;justify-content:center;text-align:center\">"
+    "Acesso restrito.<br>Abra o painel pelo link autorizado (com token).</div>"
+)
 
 
 async def _calcular_payload() -> dict:
@@ -101,6 +121,11 @@ app = FastAPI(title="Central de Inteligência — Resumo Oficina", lifespan=life
 
 @app.websocket("/ws")
 async def ws_endpoint(ws: WebSocket):
+    # O middleware HTTP não cobre WebSocket — o gate é aqui. Token vem na query
+    # (o frontend repassa o ?token=… da própria URL). 1008 = policy violation.
+    if not _token_ok(ws.query_params.get("token", "")):
+        await ws.close(code=1008)
+        return
     await ws.accept()
     clientes.add(ws)
     log.info("Painel conectado (%d no total)", len(clientes))
@@ -117,7 +142,9 @@ async def ws_endpoint(ws: WebSocket):
 
 
 @app.get("/api/resumo")
-async def api_resumo():
+async def api_resumo(request: Request):
+    if not _token_ok(request.query_params.get("token", "")):
+        return JSONResponse({"detail": "acesso negado"}, status_code=401)
     if ultimo_payload is None:
         return JSONResponse({"detail": "Primeiro ciclo ainda em execução"}, status_code=503)
     return ultimo_payload
@@ -125,11 +152,15 @@ async def api_resumo():
 
 @app.get("/healthz")
 async def healthz():
+    # SEMPRE aberto (sem token) — é o que o UptimeRobot pinga a cada 5 min para
+    # manter o serviço acordado no plano free do Render.
     return {"ok": True, "clientes": len(clientes), "temDados": ultimo_payload is not None}
 
 
 @app.get("/")
-async def index():
+async def index(request: Request):
+    if not _token_ok(request.query_params.get("token", "")):
+        return HTMLResponse(_PAGINA_NEGADA, status_code=401)
     return FileResponse(config.FRONTEND_DIR / "Resumo_Oficina.dc.html")
 
 
