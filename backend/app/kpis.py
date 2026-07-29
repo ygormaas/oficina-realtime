@@ -23,10 +23,10 @@ Fontes (schema REAL, validado com os CSVs de amostra de 10/07/2026):
 
 Regras de status validadas nos dados:
   · ordem ABERTA  = SITUACA/situacao ≠ 'C' (cancelada) e TERMINO/termino = 'N'
-  · FORA DO PRAZO = réplica FIEL da DAX Quantidade_Fora_do_Prazo_OS (29/07/2026).
-    A DAX conta TQB[Ordem] (coluna VAZIA em 100% das linhas) ⇒ dá 0 sempre —
-    é um bug da referência que replicamos DE PROPÓSITO para os painéis baterem.
-    O valor REAL (contando ordemSTJ) seria ~55. Ver _fora_prazo_os para reverter.
+  · FORA DO PRAZO = réplica da DAX Quantidade_Fora_do_Prazo_OS (validada
+    29/07/2026): TQB.SLAUltrapassadoOS='Fora do prazo' + qtdRep=0 + ordemSTJ<>''.
+    Ver _fora_prazo_os. (O card da referência exibe 0, mas é artefato — a própria
+    DAX na base dá 54.)
   · tipo de serviço (código → nome): 000001 Corretiva · 000002 Sinistro ·
     000003 Preventiva · 000004 Implementação · 000005 Socorro
 
@@ -177,31 +177,23 @@ def _prazo_fim(row: dict) -> datetime | None:
 
 
 def _fora_prazo_os(mon: dict, man_por_ordem: dict | None) -> bool:
-    """O.S. fora do prazo — RÉPLICA FIEL da medida DAX de referência
-    `Quantidade_Fora_do_Prazo_OS`:
+    """O.S. fora do prazo — RÉPLICA EXATA da medida DAX de referência
+    `Quantidade_Fora_do_Prazo_OS` (fornecida e validada em 29/07/2026):
 
         COUNT(TQB[Ordem]) onde
-            TQB.Ordem                <> ''   (a coluna que a DAX de fato CONTA)
-            TQB.ordemSTJ             <> ''
-            TQB.SLAUltrapassadoOS     = 'Fora do prazo'   (comparação sem caixa)
-            STJ_Manutencao.qtdRep     = 0
+            TQB.ordemSTJ            <> ''
+            TQB.SLAUltrapassadoOS    = 'Fora do prazo'   (comparação sem caixa)
+            STJ_Manutencao.qtdRep    = 0
 
-    ⚠️ REPRODUÇÃO INTENCIONAL DE UM BUG DA REFERÊNCIA (decidido com a operação em
-    29/07/2026 para os dois painéis exibirem o mesmo número): a DAX conta
-    `TQB[Ordem]`, coluna que vem 100% VAZIA na base (só `ordemSTJ` é preenchida).
-    COUNT de coluna sempre vazia = 0 ⇒ o card da referência mostra 0 SEMPRE,
-    não importa quantas O.S. estejam vencidas. Ao exigir `Ordem<>''` abaixo,
-    reproduzimos esse mesmo 0.
+    Ao pé da letra da referência: usa o FLAG do ERP `SLAUltrapassadoOS` (snapshot
+    da ingestão, que roda ~em tempo real) e o filtro `qtdRep=0` (esconde O.S.
+    reprovadas). INCLUI Implementação (a DAX não a exclui) — por isso este KPI
+    NÃO aplica SERVICOS_SEM_SLA, diferente de como era antes.
 
-    👉 O número REAL de vencidas (contando `ordemSTJ`) é ~55/56. Para voltar ao
-    correto, troque `mon.get("Ordem")` por `mon.get("ordemSTJ")` na 1ª checagem
-    (e peça ao time do Power BI para corrigir a DAX: `[Ordem]`→`[ordemSTJ]`).
-    Ver [[os-fora-do-prazo-dax]].
-
-    O detalhamento (_situacao_real) continua mostrando o status SLA REAL por
-    linha — igual ao detalhe da referência; só o card fica 0."""
-    if _s(mon.get("Ordem")) == "":          # coluna contada pela DAX: hoje sempre vazia ⇒ 0
-        return False
+    Nota: o card da referência exibe 0, mas isso é um artefato (card travado /
+    filtro na página); a MESMA DAX rodada na base dá 54 hoje. Ver
+    [[os-fora-do-prazo-dax]]. Difere dos demais KPIs deste arquivo, que
+    recalculam ao vivo e não usam qtdRep — aqui seguimos a DAX literal."""
     if _s(mon.get("ordemSTJ")) == "":
         return False
     if _norm(mon.get("SLAUltrapassadoOS")) != "FORA DO PRAZO":
