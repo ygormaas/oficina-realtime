@@ -395,9 +395,10 @@ def _mecanicos_detalhe(mec_rows: list[dict] | None,
                                          x["nome"]))
 
 
-def _reservas_limite(mon_rows: list[dict] | None,
-                     bem_rows: list[dict] | None) -> list[dict] | None:
-    """Reservas no Limite = medida DAX Qtd_Res_Limite (validado =2 em 23/07/2026).
+def _reservas_grupos(mon_rows: list[dict] | None,
+                     bem_rows: list[dict] | None) -> dict | None:
+    """Frota de reserva por (contrato, lote). Base da medida Qtd_Res_Limite
+    (validado =2 em 23/07/2026) e do drill-down por contrato.
 
     Regra decifrada com a operação (23/07/2026): a frota de reserva é gerida por
     CONTRATO + LOTE (o reserva substitui um veículo do mesmo lote — em 95% dos
@@ -415,27 +416,31 @@ def _reservas_limite(mon_rows: list[dict] | None,
     APOSENTA a TTI_Portaria (portaria): o feed da raw.TTI parou em 07/04/2026 e o
     codVei2/reserva de lá congelou. O Xbemre nativo da TQB é a fonte viva.
 
-    Devolve os GRUPOS no limite (contrato, lote, estoque, emUso, veiculos, mons);
-    a medida é o len() da lista, e `mons` alimenta o drill-down. None quando não
-    há cadastro de bens (cai para KPI_RESERVA_LIMITE_MANUAL do .env)."""
+    Devolve o dict de GRUPOS {(contrato, lote): {estoque:{bem…}, uso:{bem…}}} —
+    base tanto da contagem (nº de lotes no limite) quanto do drill-down por
+    contrato. None quando não há cadastro de bens (cai para
+    KPI_RESERVA_LIMITE_MANUAL do .env)."""
     if not bem_rows:
         return None
     cad = {_s(b.get("bem")): b for b in bem_rows if _s(b.get("bem"))}
 
-    # (contrato, lote) -> {"estoque": {bem…}, "uso": {bem…}, "mons": [mon…]}
     grupos: dict[tuple[str, str], dict] = {}
 
     def _g(contrato: str, lote: str) -> dict:
         return grupos.setdefault((contrato, lote),
-                                 {"estoque": set(), "uso": set(), "mons": []})
+                                 {"estoque": set(), "uso": set(), "tecs": []})
 
-    # estoque: veículos classificados como Reserva (02), por contrato+lote
+    # estoque: veículos classificados como Reserva (02), por contrato+lote.
+    # `tecs` guarda a tecnologia de cada reserva do lote — o modelo dominante
+    # (moda) do drill-down sai daí (um lote pode misturar modelos).
     for b in bem_rows:
         if _s(b.get("statusBem")) != "02":
             continue
         contrato, lote = _s(b.get("numeroContrato")), _s(b.get("numeroLote"))
         if contrato and lote:
-            _g(contrato, lote)["estoque"].add(_s(b.get("bem")))
+            g = _g(contrato, lote)
+            g["estoque"].add(_s(b.get("bem")))
+            g["tecs"].append(_s(b.get("tecnologia")))
 
     # em uso: Xbemre (veículo reserva designado) de O.S. abertas, pelo
     # contrato+lote do PRÓPRIO reserva no cadastro.
@@ -445,19 +450,58 @@ def _reservas_limite(mon_rows: list[dict] | None,
         if not rbem or not b:
             continue
         contrato, lote = _s(b.get("numeroContrato")), _s(b.get("numeroLote"))
-        if not contrato or not lote:
-            continue
-        g = _g(contrato, lote)
-        g["uso"].add(rbem)
-        g["mons"].append(m)
+        if contrato and lote:
+            _g(contrato, lote)["uso"].add(rbem)
+    return grupos
 
-    no_limite = []
+
+def _lote_no_limite(g: dict) -> bool:
+    """Lote no limite: tem reserva em uso e nenhuma disponível (estoque−uso ≤ 0)."""
+    return bool(g["uso"]) and (len(g["estoque"]) - len(g["uso"])) <= 0
+
+
+def _reservas_limite_qtd(grupos: dict) -> int:
+    """Medida Qtd_Res_Limite = nº de grupos (contrato+lote) no limite."""
+    return sum(1 for g in grupos.values() if _lote_no_limite(g))
+
+
+def _reservas_contratos(grupos: dict, tqr_rows: list[dict] | None = None) -> list[dict]:
+    """Visão por CONTRATO para o drill-down. Inclui TODO contrato com frota de
+    reserva (estoque > 0 ou algum uso), com estoque/usados/disponível totais e a
+    quebra por lote. `esgotado` = tem ao menos UM lote no limite — o reserva é
+    gerido por lote, então um contrato pode ter folga total e ainda um lote
+    travado (que é o que a medida conta). Esgotados no topo.
+
+    Cada lote traz o `modelo` DOMINANTE (moda das tecnologias dos reservas do
+    lote → TQR_DESMOD). Vazio se não houver catálogo TQR."""
+    desmod = {_s(r.get("TQR_TIPMOD")): _s(r.get("TQR_DESMOD")) for r in (tqr_rows or [])}
+
+    def _modelo(tecs: list[str]) -> str:
+        tecs = [t for t in tecs if t]
+        if not tecs:
+            return ""
+        dominante = max(set(tecs), key=tecs.count)
+        return desmod.get(dominante, "")
+
+    por_c: dict[str, dict] = {}
     for (contrato, lote), g in grupos.items():
-        if g["uso"] and (len(g["estoque"]) - len(g["uso"])) <= 0:
-            no_limite.append({"contrato": contrato, "lote": lote,
-                              "estoque": len(g["estoque"]), "emUso": len(g["uso"]),
-                              "veiculos": sorted(g["uso"]), "mons": g["mons"]})
-    return sorted(no_limite, key=lambda x: (x["contrato"], x["lote"]))
+        e, u = len(g["estoque"]), len(g["uso"])
+        pc = por_c.setdefault(contrato, {"estoque": 0, "usados": 0, "lotes": []})
+        pc["estoque"] += e
+        pc["usados"] += u
+        pc["lotes"].append({"lote": lote, "estoque": e, "usados": u,
+                            "cheio": _lote_no_limite(g),
+                            "modelo": _modelo(g.get("tecs", []))})
+    out = []
+    for contrato, pc in por_c.items():
+        esgotado = any(lt["cheio"] for lt in pc["lotes"])
+        out.append({"contrato": contrato,
+                    "estoque": pc["estoque"], "usados": pc["usados"],
+                    "disponivel": pc["estoque"] - pc["usados"],
+                    "esgotado": esgotado,
+                    "lotes": sorted(pc["lotes"], key=lambda x: x["lote"])})
+    # esgotados primeiro; depois os de maior uso; empate por contrato.
+    return sorted(out, key=lambda x: (not x["esgotado"], -x["usados"], x["contrato"]))
 
 
 # Categoria "Pesada" no catálogo TQR (TQR_CATBEM). MAPEAMENTO INFERIDO
@@ -577,7 +621,9 @@ def _reserva_de_mon(mon: dict | None, bem_idx: dict | None) -> tuple[str, str, s
     """Veículo reserva que substitui o que está parado, a partir da TQB:
     `Xbemre` é o bem da reserva e `Xreser` o pedido de reserva.
 
-    Devolve (placa, nome, situação), com situação em:
+    Devolve (codBem, nome, situação) — o primeiro valor é o PREFIXO da reserva
+    (o próprio `Xbemre`), não a placa, para casar com a coluna do veículo, que
+    também mostra codBem. Situação em:
       'designada'  — reserva com veículo definido (Xbemre preenchido)
       'aguardando' — reserva pedida (Xreser='S') mas ainda sem veículo
       ''           — nenhuma reserva pedida
@@ -586,8 +632,8 @@ def _reserva_de_mon(mon: dict | None, bem_idx: dict | None) -> tuple[str, str, s
         return "", "", ""
     bem = _s(mon.get("Xbemre"))
     if bem:
-        placa, nome = _placa_nome(bem, bem_idx)
-        return placa, nome, "designada"
+        _placa, nome = _placa_nome(bem, bem_idx)
+        return bem, nome, "designada"
     if _norm(mon.get("Xreser")) == "S":
         return "", "", "aguardando"
     return "", "", ""
@@ -675,22 +721,6 @@ def _linha_detalhe(row: dict, bem_idx: dict | None = None,
         "serv":        _nome_servico(row),
         "st":          _situacao_real(mon, agora or datetime.now(TZ_BR), _nome_servico(row)),
     }
-
-
-def _detalhes_reserva(grupos: list[dict],
-                      bem_idx: dict | None = None,
-                      man_por_ordem: dict | None = None,
-                      agora: datetime | None = None) -> list[dict]:
-    """Linhas do drill-down de "Reservas no limite": as O.S. abertas que estão
-    ocupando as reservas de um lote esgotado (contrato+lote sem reserva
-    disponível). Cada linha é o veículo PARADO que segura uma das últimas
-    reservas do lote — o Xbemre aparece na coluna de reserva (via
-    _detalhe_de_mon). Vem da mesma TQB_Monitoramento dos outros drill-downs."""
-    linhas = []
-    for g in grupos:
-        for m in g.get("mons", []):
-            linhas.append(_detalhe_de_mon(m, bem_idx, man_por_ordem, agora))
-    return linhas
 
 
 def _ordenar_por_abertura(linhas: list[dict], desc: bool = True) -> list[dict]:
@@ -846,6 +876,12 @@ def build_payload(man_rows: list[dict],
         m = mon_por_ordem.get(_s(r.get("ordem")))
         if not m or "FORA" not in _norm(m.get("SLAUltrapassadoCC")):
             continue
+        # Sem SLA de cláusula não há prazo a estourar: o flag SLAUltrapassadoCC
+        # da ingestão marca "Fora do Prazo" mesmo quando SLAVencimentoCC é nulo
+        # (contrato sem SZT_Contratos.Sla). Regra da operação (28/07/2026): sem
+        # SLA, não aparece nem conta. Desvia do painel de referência de propósito.
+        if _dt_iso(m.get("SLAVencimentoCC")) is None:
+            continue
         if _norm(m.get("nmServ")) == "IMPLEMENTACAO":
             continue
         if _s(m.get("Xbemre")) != "":          # veículo reserva apontado → não conta
@@ -913,11 +949,12 @@ def build_payload(man_rows: list[dict],
     # None = sem cadastro de bens; cai para o valor manual do .env e o drill-down
     # fica vazio (não há como listar o que não veio da fonte). Com cadastro, o
     # KPI é o nº de grupos contrato+lote no limite (estoque 02 × Xbemre em uso).
-    reserva_grupos = _reservas_limite(mon_rows, bem_rows)
+    reserva_grupos = _reservas_grupos(mon_rows, bem_rows)
     if reserva_grupos is None:
-        reserva_limite, reserva_grupos = config.KPI_RESERVA_LIMITE_MANUAL, []
+        reserva_limite, reserva_contratos = config.KPI_RESERVA_LIMITE_MANUAL, []
     else:
-        reserva_limite = len(reserva_grupos)
+        reserva_limite = _reservas_limite_qtd(reserva_grupos)
+        reserva_contratos = _reservas_contratos(reserva_grupos, tqr_rows)
 
     # --- Drill-downs ---------------------------------------------------------
     # TODOS ordenados pela abertura, do MAIS RECENTE para o mais antigo
@@ -934,8 +971,9 @@ def build_payload(man_rows: list[dict],
         "veiculos":    _ordenar_por_abertura([
             _linha_detalhe(r, bem_idx, mon_por_ordem, agora)
             for r in abertas], desc=True),
-        "reservaLimite": _ordenar_por_abertura(
-            _detalhes_reserva(reserva_grupos, bem_idx, man_por_ordem, agora)),
+        # Lista de CONTRATOS (não O.S.): estoque × usados por contrato + quebra
+        # por lote. Layout próprio no frontend (não a tabela padrão).
+        "reservaLimite": reserva_contratos,
         # Mão de obra: "quem são" do efetivo em turno (sem O.S. — a base não liga
         # mecânico à ordem executada; ver _mecanicos_detalhe / fetch_mecanicos).
         "mecanicos":   _mecanicos_detalhe(mecanicos_rows, mecanicos_os_rows),

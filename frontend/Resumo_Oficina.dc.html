@@ -350,15 +350,18 @@
             </div>
             <span style="font-size:14px;color:var(--maas-petroleo-45);">{{ detailSubtitle }}</span>
           </div>
+          <sc-if value="{{ ehTabela }}" hint-placeholder-val="{{ true }}">
           <span style="margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:9px;background:var(--surface-sunken);border:1px solid var(--border-subtle);border-radius:var(--radius-pill);padding:0 16px;height:42px;min-width:300px;">
             <span style="display:inline-flex;flex:none;">{{ icBusca }}</span>
             <input value="{{ filtroQ }}" onInput="{{ onBuscar }}" placeholder="Buscar placa, ordem, S.S. ou serviço"
                    style="flex:1;border:none;outline:none;background:transparent;font-family:var(--font-sans);font-size:14px;color:var(--maas-petroleo);min-width:0;">
           </span>
-          <span onClick="{{ closeDetail }}" role="button" tabindex="0" title="Fechar" style="flex:none;width:40px;height:40px;border-radius:10px;border:1px solid var(--border-default);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--surface-sunken);">{{ icClose }}</span>
+          </sc-if>
+          <span onClick="{{ closeDetail }}" role="button" tabindex="0" title="Fechar" style="margin-left:0;flex:none;width:40px;height:40px;border-radius:10px;border:1px solid var(--border-default);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--surface-sunken);">{{ icClose }}</span>
         </div>
 
-        <!-- Barra de filtros: serviço, situação e período -->
+        <!-- Barra de filtros: serviço, situação e período (só na tabela de O.S.) -->
+        <sc-if value="{{ ehTabela }}" hint-placeholder-val="{{ true }}">
         <div style="display:flex;flex-direction:column;gap:9px;padding:13px 32px;border-bottom:1px solid var(--border-subtle);flex:none;background:var(--surface-card);">
           <!-- Linha 1: Serviço + Situação · Linha 2: Abertura + Previsão · Linha 3: Contrato -->
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -400,8 +403,44 @@
           </sc-if>
           </div>
         </div>
+        </sc-if>
         <!-- Corpo -->
         <div style="overflow-y:auto;overflow-x:auto;flex:1;min-height:0;">
+          <!-- Reservas no limite: um cartão por contrato (estoque × usados) com
+               a quebra por lote em barras. Esgotados no topo, barra vermelha. -->
+          <sc-if value="{{ ehReserva }}">
+          <div style="padding:8px 0 16px;">
+            <sc-for list="{{ reservaLinhas }}" as="r" hint-placeholder-count="8">
+              <sc-if value="{{ r.ehContrato }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;gap:22px;padding:15px 30px 12px;border-left:5px solid {{ r.barra }};border-top:{{ r.topo }};background:{{ r.headBg }};">
+                  <div style="width:170px;flex:none;display:flex;align-items:center;gap:10px;">
+                    <span class="mono" style="font-size:19px;font-weight:700;color:var(--maas-petroleo);letter-spacing:-.3px;">{{ r.contrato }}</span>
+                    <span class="sans" style="display:{{ r.esgDisplay }};font-size:9.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#B83A32;background:rgba(217,83,79,.10);border:1.5px solid rgba(217,83,79,.30);padding:2px 8px;border-radius:var(--radius-pill);">Esgotado</span>
+                  </div>
+                  <div style="flex:1;display:flex;gap:30px;align-items:baseline;">
+                    <span style="font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--maas-petroleo-45);">Estoque <b class="mono" style="font-size:19px;font-weight:700;color:var(--maas-petroleo);margin-left:4px;">{{ r.estoque }}</b></span>
+                    <span style="font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--maas-petroleo-45);">Usados <b class="mono" style="font-size:19px;font-weight:700;color:var(--maas-petroleo);margin-left:4px;">{{ r.usados }}</b></span>
+                    <span style="font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--maas-petroleo-45);">Disponível <b class="mono" style="font-size:19px;font-weight:700;color:{{ r.dispCor }};margin-left:4px;">{{ r.disponivel }}</b></span>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ r.ehLote }}">
+                <div style="display:flex;align-items:center;gap:11px;padding:3px 30px 3px 52px;border-left:5px solid {{ r.barra }};">
+                  <span class="sans" style="width:200px;flex:none;font-size:12.5px;color:var(--maas-petroleo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.modelo }}</span>
+                  <span class="mono" style="width:34px;flex:none;font-size:12px;font-weight:600;color:var(--maas-petroleo-45);">{{ r.lote }}</span>
+                  <span style="flex:1;height:12px;background:var(--surface-sunken);border-radius:4px;overflow:hidden;min-width:0;"><span style="display:block;height:100%;width:{{ r.pct }};background:{{ r.cor }};"></span></span>
+                  <span class="mono" style="width:46px;flex:none;text-align:right;font-size:12.5px;font-weight:700;color:var(--maas-petroleo);">{{ r.rotulo }}</span>
+                </div>
+              </sc-if>
+            </sc-for>
+            <sc-if value="{{ reservaVazio }}">
+              <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:80px 20px;">
+                <span style="display:inline-flex;">{{ icSearch }}</span>
+                <span style="font-size:17px;font-weight:700;color:var(--maas-petroleo-60);">Nenhum contrato com frota de reserva</span>
+              </div>
+            </sc-if>
+          </div>
+          </sc-if>
           <sc-if value="{{ semNadaNaFonte }}">
             <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:80px 20px;">
               <span style="display:inline-flex;">{{ icSearch }}</span>
@@ -429,7 +468,7 @@
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Ordem</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Prefixo</span>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Contrato</span>
-              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Reserva</span>
+              <sc-if value="{{ mostraReserva }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Reserva</span></sc-if>
               <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Tipo</span>
               <!-- Col 8/9: padrão = Situação + Previsão · cláusula = duas datas de
                    conclusão (SLA do contrato em destaque + Previsto da manutenção,
@@ -457,6 +496,7 @@
                   <sc-if value="{{ r.nome }}"><span class="sans" style="font-size:12px;color:var(--maas-petroleo-45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">{{ r.nome }}</span></sc-if>
                 </span>
                 <span class="mono" style="font-size:13px;font-weight:600;color:var(--maas-petroleo-60);white-space:nowrap;">{{ r.contratoTxt }}</span>
+                <sc-if value="{{ r.mostraReserva }}" hint-placeholder-val="{{ true }}">
                 <span style="display:flex;flex-direction:column;min-width:0;">
                   <sc-if value="{{ r.temReserva }}" hint-placeholder-val="{{ true }}">
                     <span class="mono" style="font-size:14px;font-weight:700;color:var(--maas-verde-escuro-2);">{{ r.reserva }}</span>
@@ -464,6 +504,7 @@
                   </sc-if>
                   <sc-if value="{{ r.semReserva }}"><span class="sans" style="font-size:14px;color:var(--maas-petroleo-25);">—</span></sc-if>
                 </span>
+                </sc-if>
                 <span><span class="sans" style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:var(--radius-pill);background:var(--surface-sunken);font-size:12.5px;font-weight:600;color:var(--maas-petroleo);white-space:nowrap;"><span style="width:7px;height:7px;border-radius:50%;background:{{ r.servCor }};flex:none;"></span>{{ r.serv }}</span></span>
                 <!-- Col 8: Situação (padrão) OU SLA do contrato (cláusula). Fonte
                      sempre petróleo; o SINAL é a linha inferior VERMELHA (o SLA de
@@ -971,6 +1012,53 @@ class Component extends DCLogic {
       if (t==='Crítico')       return { fg:'#B83A32', bg:'rgba(217,83,79,.10)', bd:'rgba(217,83,79,.35)' };
       return { fg:'var(--maas-petroleo-60)', bg:'var(--surface-sunken)', bd:'transparent' };
     };
+
+    // Reservas no limite: drill-down por CONTRATO (estoque × usados + quebra por
+    // lote em barras), não a tabela de O.S. Layout próprio; sem busca nem filtros.
+    if (id === 'reservaLimite') {
+      const contratos = (this.state.data && this.state.data.detalhes && this.state.data.detalhes.reservaLimite) || [];
+      // Achata contrato+lotes numa lista ÚNICA (o runtime não faz sc-for
+      // aninhado): cada entrada é um cabeçalho de contrato ou uma barra de lote,
+      // discriminadas por ehContrato/ehLote. A barra lateral (vermelha nos
+      // esgotados) é a mesma no cabeçalho e nos lotes, agrupando visualmente.
+      const reservaLinhas = [];
+      let contadorContratos = 0;
+      contratos.forEach(c => {
+        contadorContratos++;
+        const barra = c.esgotado ? '#B83A32' : 'var(--border-subtle)';
+        reservaLinhas.push({
+          ehContrato: true, ehLote: false,
+          contrato: c.contrato, estoque: c.estoque, usados: c.usados, disponivel: c.disponivel,
+          barra, topo: contadorContratos > 1 ? '1px solid var(--border-subtle)' : 'none',
+          headBg: c.esgotado ? 'rgba(217,83,79,.05)' : 'transparent',
+          dispCor: c.disponivel <= 0 ? '#B83A32' : 'var(--maas-verde-escuro-2)',
+          // tag "Esgotado" sem sc-if aninhado: controla visibilidade por display.
+          esgDisplay: c.esgotado ? 'inline-block' : 'none',
+        });
+        (c.lotes || []).forEach(l => {
+          reservaLinhas.push({
+            ehContrato: false, ehLote: true, barra,
+            lote: l.lote, modelo: l.modelo || '—', rotulo: l.usados + '/' + l.estoque,
+            pct: (l.estoque > 0 ? Math.round(100 * Math.min(l.usados, l.estoque) / l.estoque) : 0) + '%',
+            cor: l.cheio ? '#B83A32' : 'var(--maas-verde)',
+          });
+        });
+      });
+      return {
+        detailOpen: true, ehReserva: true, ehTabela: false,
+        detailTitle: meta.title,
+        detailSubtitle: contratos.length + ' contratos com frota de reserva · esgotados no topo',
+        detailCount: contratos.length,
+        reservaLinhas, reservaVazio: contratos.length === 0,
+        detailIconEl: this.ic(meta.icon, 26, sevCor.fg),
+        sevFg: sevCor.fg, sevBg: sevCor.bg,
+        icClose: this.ic('x', 22, 'var(--maas-petroleo)'),
+        icSearch: this.ic('search', 34, 'var(--maas-petroleo-25)'),
+        stop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
+        closeDetail: () => this.setState({ detailId: null }),
+      };
+    }
+
     const raw = (this.state.data && this.state.data.detalhes && this.state.data.detalhes[id]) || [];
     // Agrupa O.S. da mesma S.S.: deixa as linhas adjacentes e marca com uma
     // barra colorida à esquerda (uma cor por S.S. com mais de uma O.S.).
@@ -992,7 +1080,11 @@ class Component extends DCLogic {
     // sempre da mesma largura (o fundo do cabeçalho cobre tudo, sem vazamento).
     const GRID_STD  = 'minmax(0,72px) minmax(0,104px) minmax(0,64px) minmax(0,1.7fr) minmax(0,90px) minmax(0,1fr) minmax(0,116px) minmax(0,116px) minmax(0,116px)';
     const GRID_VEIC = 'minmax(0,72px) minmax(0,64px) minmax(0,1.7fr) minmax(0,90px) minmax(0,1fr) minmax(0,116px) minmax(0,132px) minmax(0,96px)';
-    const gridCols = ehVeic ? GRID_VEIC : GRID_STD;
+    // Cláusula não tem coluna Reserva (por definição, é sempre "sem reserva
+    // apontada" — a coluna ficaria toda "—"). GRID_STD sem o 1fr da reserva.
+    const GRID_CLAUS = 'minmax(0,72px) minmax(0,104px) minmax(0,64px) minmax(0,1.7fr) minmax(0,90px) minmax(0,116px) minmax(0,116px) minmax(0,116px)';
+    const ehClaus = id === 'clausula';
+    const gridCols = ehVeic ? GRID_VEIC : (ehClaus ? GRID_CLAUS : GRID_STD);
     const todas = raw.slice()
       .sort((a, b) => (firstSeen[a.ss] - firstSeen[b.ss]))   // mesma S.S. lado a lado
       .map(r => {
@@ -1005,6 +1097,8 @@ class Component extends DCLogic {
                  semReserva: !r.reserva,
                  // Descrição do serviço: só no detalhamento de O.S. abertas.
                  temDesc: id === 'osAbertas' && !!r.desc,
+                 // Coluna Reserva escondida na cláusula (sempre "sem reserva").
+                 mostraReserva: !ehClaus,
                  ehVeiculos: ehVeic, naoEhVeiculos: !ehVeic, gridCols,
                  // Mobilização e Local (só aparecem no detalhamento de veículos)
                  mobilCor: r.mobil === 'Mobilizado' ? 'var(--maas-verde)' : 'var(--maas-petroleo-45)',
@@ -1109,7 +1203,7 @@ class Component extends DCLogic {
 
     const temFiltro = !!(q || f.serv || f.sit || f.per || f.prev || f.ctr);
     return {
-      detailOpen: true,
+      detailOpen: true, ehReserva: false, ehTabela: true,
       detailTitle: meta.title,
       detailSubtitle: temFiltro ? (rows.length + ' de ' + todas.length + ' registros após filtro')
                                 : meta.sub(todas.length),
@@ -1128,6 +1222,7 @@ class Component extends DCLogic {
       // troca Situação+Previsão por duas datas de conclusão (Previsto + SLA).
       ehClausula: id === 'clausula',
       ehPadrao: !ehVeic && id !== 'clausula',
+      mostraReserva: !ehClaus,
       ehVeiculos: ehVeic, naoEhVeiculos: !ehVeic, gridCols,
       detailIconEl: this.ic(meta.icon, 26, sevCor.fg),
       sevFg: sevCor.fg,
