@@ -23,7 +23,10 @@ Fontes (schema REAL, validado com os CSVs de amostra de 10/07/2026):
 
 Regras de status validadas nos dados:
   · ordem ABERTA  = SITUACA/situacao ≠ 'C' (cancelada) e TERMINO/termino = 'N'
-  · FORA DO PRAZO = aberta e agora > dtMpFim+horaMpFim  (o P.FIM MAN do protótipo)
+  · FORA DO PRAZO = réplica FIEL da DAX Quantidade_Fora_do_Prazo_OS (29/07/2026).
+    A DAX conta TQB[Ordem] (coluna VAZIA em 100% das linhas) ⇒ dá 0 sempre —
+    é um bug da referência que replicamos DE PROPÓSITO para os painéis baterem.
+    O valor REAL (contando ordemSTJ) seria ~55. Ver _fora_prazo_os para reverter.
   · tipo de serviço (código → nome): 000001 Corretiva · 000002 Sinistro ·
     000003 Preventiva · 000004 Implementação · 000005 Socorro
 
@@ -171,6 +174,40 @@ def _aberta_man(row: dict) -> bool:
 def _prazo_fim(row: dict) -> datetime | None:
     """P.FIM MAN = dtMpFim + horaMpFim (100% preenchido na amostra)."""
     return _dt_compacta(row.get("dtMpFim"), row.get("horaMpFim"))
+
+
+def _fora_prazo_os(mon: dict, man_por_ordem: dict | None) -> bool:
+    """O.S. fora do prazo — RÉPLICA FIEL da medida DAX de referência
+    `Quantidade_Fora_do_Prazo_OS`:
+
+        COUNT(TQB[Ordem]) onde
+            TQB.Ordem                <> ''   (a coluna que a DAX de fato CONTA)
+            TQB.ordemSTJ             <> ''
+            TQB.SLAUltrapassadoOS     = 'Fora do prazo'   (comparação sem caixa)
+            STJ_Manutencao.qtdRep     = 0
+
+    ⚠️ REPRODUÇÃO INTENCIONAL DE UM BUG DA REFERÊNCIA (decidido com a operação em
+    29/07/2026 para os dois painéis exibirem o mesmo número): a DAX conta
+    `TQB[Ordem]`, coluna que vem 100% VAZIA na base (só `ordemSTJ` é preenchida).
+    COUNT de coluna sempre vazia = 0 ⇒ o card da referência mostra 0 SEMPRE,
+    não importa quantas O.S. estejam vencidas. Ao exigir `Ordem<>''` abaixo,
+    reproduzimos esse mesmo 0.
+
+    👉 O número REAL de vencidas (contando `ordemSTJ`) é ~55/56. Para voltar ao
+    correto, troque `mon.get("Ordem")` por `mon.get("ordemSTJ")` na 1ª checagem
+    (e peça ao time do Power BI para corrigir a DAX: `[Ordem]`→`[ordemSTJ]`).
+    Ver [[os-fora-do-prazo-dax]].
+
+    O detalhamento (_situacao_real) continua mostrando o status SLA REAL por
+    linha — igual ao detalhe da referência; só o card fica 0."""
+    if _s(mon.get("Ordem")) == "":          # coluna contada pela DAX: hoje sempre vazia ⇒ 0
+        return False
+    if _s(mon.get("ordemSTJ")) == "":
+        return False
+    if _norm(mon.get("SLAUltrapassadoOS")) != "FORA DO PRAZO":
+        return False
+    man = (man_por_ordem or {}).get(_s(mon.get("ordemSTJ")))
+    return man is not None and _num(man.get("qtdRep")) == 0
 
 
 def _mobilizado(row: dict) -> bool:
@@ -561,29 +598,24 @@ def _servico_da_ordem(mon: dict | None, man_por_ordem: dict | None) -> str:
 
 
 def _situacao_real(mon: dict | None, agora: datetime, servico: str = "") -> str:
-    """Situação da linha vinda das COLUNAS da fonte, não de um rótulo fixo por
-    drill-down (o que fazia toda linha de "O.S. abertas" aparecer como 'Aberta').
+    """Situação SLA da O.S. no detalhamento — MESMA regra do KPI "O.S. fora do
+    prazo": o flag `SLAUltrapassadoOS` do ERP (ver _fora_prazo_os), para o
+    detalhe bater com o card. Trocado em 29/07/2026 ao replicar a DAX de
+    referência (antes usava `SLAVencimentoOS` recalculado ao vivo).
 
-    Nenhuma coluna de status distingue as ordens abertas entre si — `situacao`
-    do STJ é 'L' em todas e `StatusOS` é 'Aberta' em todas. O que de fato varia
-    é o SLA. Então:
-      - `StatusOS` quando ele diz algo além de "Aberta" (ex.: 'Aguardando
-        Abertura', nas S.S. que ainda não viraram O.S.);
-      - senão, o SLA da O.S. recalculado AO VIVO (agora > SLAVencimentoOS) —
-        a MESMA regra do KPI "O.S. fora do prazo", para o detalhamento bater
-        com o número do card em vez do flag-snapshot SLAUltrapassadoOS;
-      - sem monitoramento, 'Sem SLA'.
+    `StatusOS` prevalece quando diz algo além de "Aberta" (ex.: 'Aguardando
+    Abertura', nas S.S. que ainda não viraram O.S.). Sem monitoramento ou sem
+    flag ⇒ 'Sem SLA'. (`agora`/`servico` mantidos por compatibilidade de chamada.)
     """
     if not mon:
         return "Sem SLA"
     status = _s(mon.get("StatusOS"))
     if status and "ABERTA" not in _norm(status):
         return status
-    if (servico or _nome_servico_mon(mon)) in SERVICOS_SEM_SLA:
-        return "Sem prazo"
-    if _dt_iso(mon.get("SLAVencimentoOS")) is None:
+    flag = _norm(mon.get("SLAUltrapassadoOS"))
+    if not flag:
         return "Sem SLA"
-    return "Fora do Prazo" if _sla_fora(mon, "SLAVencimentoOS", agora) else "No prazo"
+    return "Fora do Prazo" if flag == "FORA DO PRAZO" else "No prazo"
 
 
 def _previsao_entrega(row: dict | None, agora: datetime) -> tuple[str, bool]:
@@ -821,13 +853,10 @@ def build_payload(man_rows: list[dict],
     abertas = _abertas_os(man_rows)
     abertas_ordens = {_s(r.get("ordem")) for r in abertas if _s(r.get("ordem"))}
 
-    # --- OS Fora do Prazo (SLA da OS estourado AO VIVO, sobre as abertas) ----
-    # Só Implementação fica fora da conta (não tem obrigação de prazo — ver
-    # SERVICOS_SEM_SLA). Sinistro ENTRA normalmente (desde 23/07/2026).
-    os_fora = [m for m in mon_rows
-               if _s(m.get("ordemSTJ")) in abertas_ordens
-               and _servico_da_ordem(m, man_por_ordem) not in SERVICOS_SEM_SLA
-               and _sla_fora(m, "SLAVencimentoOS", agora)]
+    # --- OS Fora do Prazo (RÉPLICA da DAX Quantidade_Fora_do_Prazo_OS) -------
+    # Flag SLAUltrapassadoOS='Fora do prazo' + qtdRep=0 + ordemSTJ<>''.
+    # INCLUI Implementação (a DAX não exclui). Ver _fora_prazo_os.
+    os_fora = [m for m in mon_rows if _fora_prazo_os(m, man_por_ordem)]
 
     # --- S.O.S (serviço 000005) ---------------------------------------------
     sos = [r for r in abertas if _s(r.get("servico")) == "000005"]
