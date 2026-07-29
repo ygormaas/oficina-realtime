@@ -1,0 +1,44 @@
+# Blueprint do Render — Central de Inteligência "Resumo Oficina" (MAAS)
+#
+# Sobe o backend FastAPI, que já serve o frontend e o WebSocket (/ws) no
+# mesmo serviço. O Render clona o repositório inteiro; os comandos abaixo
+# rodam dentro de backend/ (rootDir), mas o frontend/ continua acessível
+# porque o config.py resolve o caminho a partir do próprio arquivo.
+#
+# Para usar: no painel do Render → New → Blueprint → aponte para este repo.
+# Depois preencha o Secret GOOGLE_APPLICATION_CREDENTIALS_JSON (ver README).
+services:
+  - type: web
+    name: oficina-resumo
+    runtime: python
+    plan: free              # troque para "starter" p/ TV 24/7 (o free hiberna após ~15 min ocioso)
+    rootDir: backend
+    region: oregon          # troque se preferir (ex.: virginia)
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    autoDeploy: true        # cada push na branch principal redeploya
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: DATA_SOURCE
+        value: bigquery
+      - key: BQ_PROJECT
+        value: gcp-maas-proj-manutencao
+      - key: BQ_DATASET
+        value: silver
+      - key: BQ_VIEW_MANUTENCAO
+        value: STJ_Manutencao
+      - key: BQ_VIEW_STJ
+        value: STJ
+      - key: BQ_MAX_ROWS
+        value: "50000"
+      - key: POLL_SECONDS
+        value: "300"
+      - key: PREV_RETRO_DIAS
+        value: "90"
+      # Credencial da service account do BigQuery.
+      # NÃO fica no repositório — cole o conteúdo do JSON no painel do Render
+      # (Environment → este valor). sync:false impede que o valor vá para o git.
+      - key: GOOGLE_APPLICATION_CREDENTIALS_JSON
+        sync: false

@@ -29,9 +29,28 @@ _client = None
 def _get_client():
     global _client
     if _client is None:
+        import os
         from google.cloud import bigquery  # import tardio (modo mock/csv não precisa)
-        _client = bigquery.Client(project=config.BQ_PROJECT)
-        log.info("Cliente BigQuery criado para o projeto %s", config.BQ_PROJECT)
+
+        # Autenticação, em ordem de preferência:
+        #   1) GOOGLE_APPLICATION_CREDENTIALS_JSON = conteúdo do JSON da service
+        #      account colado direto numa variável de ambiente. É o modo usado
+        #      em hospedagem sem disco (ex.: Render), onde não há arquivo de chave.
+        #   2) GOOGLE_APPLICATION_CREDENTIALS = caminho para o arquivo JSON
+        #      (usado na máquina da TV, apontado pelo iniciar-painel-tv.bat), ou
+        #      o login `gcloud auth application-default login`. Comportamento
+        #      padrão do cliente — nada a fazer aqui.
+        cred_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+        if cred_json:
+            import json
+            from google.oauth2 import service_account
+            info = json.loads(cred_json)
+            creds = service_account.Credentials.from_service_account_info(info)
+            _client = bigquery.Client(project=config.BQ_PROJECT, credentials=creds)
+            log.info("Cliente BigQuery criado via GOOGLE_APPLICATION_CREDENTIALS_JSON (projeto %s)", config.BQ_PROJECT)
+        else:
+            _client = bigquery.Client(project=config.BQ_PROJECT)
+            log.info("Cliente BigQuery criado para o projeto %s", config.BQ_PROJECT)
     return _client
 
 
