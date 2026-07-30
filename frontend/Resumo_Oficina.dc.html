@@ -379,6 +379,8 @@
               <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>            </span>
           </sc-for>
           </div>
+          <!-- Abertura + Previsão: só nos drill-downs de O.S. (não em veículos) -->
+          <sc-if value="{{ naoEhVeiculos }}">
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;width:64px;">Abertura</span>
           <sc-for list="{{ perChips }}" as="c" hint-placeholder-count="3">
@@ -392,6 +394,25 @@
               <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>            </span>
           </sc-for>
           </div>
+          </sc-if>
+          <!-- Mobilização + Local: só no drill-down de veículos -->
+          <sc-if value="{{ ehVeiculos }}">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;">Mobilização</span>
+          <sc-for list="{{ mobChips }}" as="c" hint-placeholder-count="2">
+            <span onClick="{{ c.onToggle }}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:var(--radius-pill);border:1.5px solid {{ c.bd }};background:{{ c.bg }};cursor:pointer;white-space:nowrap;" style-hover="border-color:{{ c.cor }};">
+              <span style="width:8px;height:8px;border-radius:50%;background:{{ c.cor }};flex:none;"></span>
+              <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>            </span>
+          </sc-for>
+          <span style="width:3px;height:30px;background:#79a4af;border-radius:2px;flex:none;margin:0 10px;"></span>
+          <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;">Local</span>
+          <sc-for list="{{ locChips }}" as="c" hint-placeholder-count="2">
+            <span onClick="{{ c.onToggle }}" role="button" tabindex="0" style="display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:var(--radius-pill);border:1.5px solid {{ c.bd }};background:{{ c.bg }};cursor:pointer;white-space:nowrap;" style-hover="border-color:{{ c.cor }};">
+              <span style="width:8px;height:8px;border-radius:50%;background:{{ c.cor }};flex:none;"></span>
+              <span class="sans" style="font-size:13px;font-weight:{{ c.peso }};color:{{ c.fg }};">{{ c.k }}</span>            </span>
+          </sc-for>
+          </div>
+          </sc-if>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span style="font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;width:64px;">Contrato</span>
           <sc-for list="{{ ctrChips }}" as="c" hint-placeholder-count="3">
@@ -699,13 +720,13 @@ class Component extends DCLogic {
   state = { clock: '', scale: FIT_SCALE(), detailId: null, data: null, conn: 'connecting',
             // Filtros do drill-down. q = busca livre (S.S., O.S., placa, modelo,
             // descrição, data); serv/sit/per/prev/ctr = facetas. Zerados a cada abertura.
-            filtro: { q: '', serv: '', sit: '', per: '', prev: '', ctr: '' },
+            filtro: { q: '', serv: '', sit: '', per: '', prev: '', ctr: '', mob: '', loc: '' },
             // Detalhamento da mão de obra (modal próprio, independente do de O.S.).
             mecOpen: false, mecFiltro: { q: '', status: '' } };
 
   // Abrir/fechar o detalhamento sempre por aqui, para os filtros não vazarem
   // de um KPI para o outro.
-  abrirDetalhe(id) { this.setState({ detailId: id, filtro: { q:'', serv:'', sit:'', per:'', prev:'', ctr:'' } }); }
+  abrirDetalhe(id) { this.setState({ detailId: id, filtro: { q:'', serv:'', sit:'', per:'', prev:'', ctr:'', mob:'', loc:'' } }); }
   abrirMec() { this.setState({ mecOpen: true, mecFiltro: { q:'', status:'' } }); }
 
   componentDidMount() {
@@ -1159,7 +1180,7 @@ class Component extends DCLogic {
       });
 
     // ---- Filtros -----------------------------------------------------------
-    const f = this.state.filtro || { q:'', serv:'', sit:'', per:'', prev:'', ctr:'' };
+    const f = this.state.filtro || { q:'', serv:'', sit:'', per:'', prev:'', ctr:'', mob:'', loc:'' };
     const alvo = (r) => [r.ss, r.os, r.codBem, r.placa, r.nome, r.desc, r.abertura, r.serv, r.st, r.contrato]
       .join(' ').toLowerCase();
     const q = f.q.trim().toLowerCase();
@@ -1195,6 +1216,8 @@ class Component extends DCLogic {
       (!f.serv || r.serv === f.serv) &&
       (!f.sit  || r.st   === f.sit) &&
       (!f.ctr  || (r.contrato || '—') === f.ctr) &&
+      (!f.mob  || r.mobil === f.mob) &&
+      (!f.loc  || r.local === f.loc) &&
       passaPeriodo(r) && passaPrevisao(r));
 
     // Contagens das facetas sobre o conjunto inteiro (como na referência).
@@ -1224,8 +1247,15 @@ class Component extends DCLogic {
       mkChip(rot, todas.filter(r => casaPrevisao(r, v)).length,
              f.prev === v, v === 'atrasada' ? '#B83A32' : 'var(--maas-petroleo)',
              () => setF({ prev: f.prev === v ? '' : v })));
+    // Só no drill-down de veículos: filtro por Mobilização e por Local (Interno/Externo).
+    const mobChips = [['Mobilizado','var(--maas-verde)'],['Não mobilizado','var(--maas-laranja)']].map(([v, cor]) =>
+      mkChip(v, todas.filter(r => r.mobil === v).length,
+             f.mob === v, cor, () => setF({ mob: f.mob === v ? '' : v })));
+    const locChips = [['Interno','var(--maas-petroleo)'],['Externo','var(--maas-laranja)']].map(([v, cor]) =>
+      mkChip(v, todas.filter(r => r.local === v).length,
+             f.loc === v, cor, () => setF({ loc: f.loc === v ? '' : v })));
 
-    const temFiltro = !!(q || f.serv || f.sit || f.per || f.prev || f.ctr);
+    const temFiltro = !!(q || f.serv || f.sit || f.per || f.prev || f.ctr || f.mob || f.loc);
     return {
       detailOpen: true, ehReserva: false, ehTabela: true,
       detailTitle: meta.title,
@@ -1239,8 +1269,8 @@ class Component extends DCLogic {
       vazioPorFiltro: todas.length > 0 && rows.length === 0,
       filtroQ: f.q,
       onBuscar: (e) => setF({ q: e && e.target ? e.target.value : '' }),
-      servChips, sitChips, perChips, prevChips, ctrChips, temFiltro,
-      limparFiltros: () => this.setState({ filtro: { q:'', serv:'', sit:'', per:'', prev:'', ctr:'' } }),
+      servChips, sitChips, perChips, prevChips, ctrChips, mobChips, locChips, temFiltro,
+      limparFiltros: () => this.setState({ filtro: { q:'', serv:'', sit:'', per:'', prev:'', ctr:'', mob:'', loc:'' } }),
       mostraDesc: id === 'osAbertas',
       // Modos de coluna do cabeçalho (espelham os flags por linha): a cláusula
       // troca Situação+Previsão por duas datas de conclusão (Previsto + SLA).
