@@ -512,8 +512,8 @@
                 </sc-if>
                 <span class="mono" style="font-size:14px;font-weight:700;color:var(--maas-petroleo);">{{ r.os }}</span>
                 <span style="display:flex;align-items:baseline;gap:9px;min-width:0;">
-                  <!-- Identificador = codBem (a placa já aparece no nome/descrição). -->
-                  <span class="mono" style="font-size:14.5px;font-weight:700;color:var(--maas-petroleo);flex:none;">{{ r.codBem }}</span>
+                  <!-- Identificador = codBem. Clicável: abre o histórico do veículo. -->
+                  <span onClick="{{ r.abrirHist }}" role="button" tabindex="0" title="Ver histórico de manutenção do veículo" class="mono" style="font-size:14.5px;font-weight:700;color:var(--maas-petroleo);flex:none;cursor:pointer;text-decoration:underline;text-decoration-color:var(--maas-petroleo-25);text-underline-offset:3px;" style-hover="color:var(--maas-verde-escuro-2);">{{ r.codBem }}</span>
                   <sc-if value="{{ r.nome }}"><span class="sans" style="font-size:12px;color:var(--maas-petroleo-45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">{{ r.nome }}</span></sc-if>
                 </span>
                 <span class="mono" style="font-size:13px;font-weight:600;color:var(--maas-petroleo-60);white-space:nowrap;">{{ r.contratoTxt }}</span>
@@ -589,6 +589,67 @@
         <div style="display:flex;align-items:center;gap:10px;padding:16px 32px;border-top:1px solid var(--border-subtle);flex:none;background:var(--surface-card);">
           <span style="font-size:13px;color:var(--maas-petroleo-45);">Fonte: Central de Inteligência · dados recalculados a cada 5 min</span>
           <span onClick="{{ closeDetail }}" role="button" tabindex="0" style="margin-left:auto;font-size:14px;font-weight:700;color:#fff;background:var(--maas-petroleo);padding:11px 22px;border-radius:10px;cursor:pointer;" style-hover="background:var(--maas-petroleo-70);">Voltar ao painel</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Popup: HISTÓRICO DE MANUTENÇÃO DO VEÍCULO (clica no codBem numa linha do
+       drill-down). 2º nível: fica POR CIMA do detalhamento (z-index maior).
+       Buscado sob demanda no backend (/api/veiculo/<cod>/historico). -->
+  <sc-if value="{{ histOpen }}">
+    <div onClick="{{ closeHist }}" style="position:fixed;inset:0;background:rgba(24,59,72,.55);display:flex;align-items:center;justify-content:center;z-index:200;padding:48px;">
+      <div onClick="{{ stopHist }}" style="width:min(1100px,92vw);height:86vh;background:var(--surface-page);border-radius:var(--radius-card-lg);box-shadow:0 32px 90px rgba(24,59,72,.4);display:flex;flex-direction:column;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:16px;padding:24px 30px;border-bottom:1px solid var(--border-subtle);flex:none;">
+          <span style="display:inline-flex;flex:none;width:50px;height:50px;border-radius:14px;background:var(--maas-verde-16);align-items:center;justify-content:center;">{{ icHistVeic }}</span>
+          <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+            <div style="display:flex;align-items:baseline;gap:12px;">
+              <span style="font-size:22px;font-weight:800;letter-spacing:-.4px;color:var(--maas-petroleo);">Histórico do veículo</span>
+              <span class="mono" style="font-size:15px;font-weight:700;color:var(--maas-petroleo-60);">{{ histPlaca }}</span>
+            </div>
+            <span style="font-size:13.5px;color:var(--maas-petroleo-45);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ histNome }}</span>
+          </div>
+          <sc-if value="{{ histTemDados }}">
+          <div style="margin-left:auto;flex:none;display:flex;gap:26px;padding-right:8px;">
+            <div style="display:flex;flex-direction:column;align-items:flex-end;">
+              <span style="font-size:22px;font-weight:800;color:var(--maas-petroleo);">{{ histTotal }}</span>
+              <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--maas-petroleo-45);">O.S. no total</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;">
+              <span style="font-size:22px;font-weight:800;color:var(--maas-petroleo);">{{ histCusto }}</span>
+              <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--maas-petroleo-45);">Custo acumulado</span>
+            </div>
+          </div>
+          </sc-if>
+          <span onClick="{{ closeHist }}" role="button" tabindex="0" title="Fechar" style="margin-left:16px;flex:none;width:40px;height:40px;border-radius:10px;border:1px solid var(--border-default);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--surface-sunken);">{{ icHistClose }}</span>
+        </div>
+        <div style="overflow-y:auto;flex:1;min-height:0;padding:0 30px;">
+          <sc-if value="{{ histLoading }}">
+            <div style="display:flex;align-items:center;justify-content:center;padding:80px 20px;font-size:16px;font-weight:600;color:var(--maas-petroleo-45);">Carregando histórico…</div>
+          </sc-if>
+          <sc-if value="{{ histErro }}">
+            <div style="display:flex;align-items:center;justify-content:center;padding:80px 20px;font-size:16px;font-weight:600;color:#B83A32;">Não foi possível carregar o histórico. Tente novamente.</div>
+          </sc-if>
+          <sc-if value="{{ histVazio }}">
+            <div style="display:flex;align-items:center;justify-content:center;padding:80px 20px;font-size:16px;font-weight:600;color:var(--maas-petroleo-45);">Sem O.S. no histórico deste veículo.</div>
+          </sc-if>
+          <sc-for list="{{ histItens }}" as="h" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;gap:6px;padding:15px 4px;border-bottom:1px solid var(--border-subtle);">
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                <span class="mono" style="font-size:13px;font-weight:700;color:var(--maas-petroleo);flex:none;width:92px;">{{ h.data }}</span>
+                <span class="mono" style="font-size:12.5px;color:var(--maas-petroleo-60);flex:none;">O.S. {{ h.os }} · S.S. {{ h.ss }}</span>
+                <span style="display:inline-flex;align-items:center;gap:7px;flex:none;">
+                  <span style="width:8px;height:8px;border-radius:50%;background:{{ h.servCor }};flex:none;"></span>
+                  <span class="sans" style="font-size:13px;font-weight:600;color:var(--maas-petroleo);">{{ h.serv }}</span>
+                </span>
+                <span style="font-size:12px;font-weight:700;color:{{ h.stFg }};background:{{ h.stBg }};padding:3px 10px;border-radius:var(--radius-pill);flex:none;">{{ h.status }}</span>
+                <span class="mono" style="margin-left:auto;font-size:14px;font-weight:700;color:var(--maas-petroleo);flex:none;">{{ h.custo }}</span>
+              </div>
+              <sc-if value="{{ h.temDesc }}">
+                <span class="sans" style="font-size:12.5px;line-height:1.4;color:var(--maas-petroleo-60);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;" title="{{ h.desc }}">{{ h.desc }}</span>
+              </sc-if>
+            </div>
+          </sc-for>
         </div>
       </div>
     </div>
@@ -722,12 +783,28 @@ class Component extends DCLogic {
             // descrição, data); serv/sit/per/prev/ctr = facetas. Zerados a cada abertura.
             filtro: { q: '', serv: '', sit: '', per: '', prev: '', ctr: '', mob: '', loc: '' },
             // Detalhamento da mão de obra (modal próprio, independente do de O.S.).
-            mecOpen: false, mecFiltro: { q: '', status: '' } };
+            mecOpen: false, mecFiltro: { q: '', status: '' },
+            // Popup de 2º nível: histórico de manutenção de um veículo (sob demanda).
+            histOpen: false, histLoading: false, histErro: false, histData: null, histCod: '' };
 
   // Abrir/fechar o detalhamento sempre por aqui, para os filtros não vazarem
   // de um KPI para o outro.
   abrirDetalhe(id) { this.setState({ detailId: id, filtro: { q:'', serv:'', sit:'', per:'', prev:'', ctr:'', mob:'', loc:'' } }); }
   abrirMec() { this.setState({ mecOpen: true, mecFiltro: { q:'', status:'' } }); }
+
+  // Histórico do veículo — busca SOB DEMANDA no backend (/api/veiculo/<cod>/historico),
+  // repassando o token da URL. Popup por cima do drill-down (z-index maior).
+  abrirHistorico(codBem) {
+    if (!codBem || codBem === '—') return;
+    this.setState({ histOpen: true, histLoading: true, histErro: false, histData: null, histCod: codBem });
+    const tok = new URLSearchParams(location.search).get('token');
+    const qs = tok ? ('?token=' + encodeURIComponent(tok)) : '';
+    fetch('/api/veiculo/' + encodeURIComponent(codBem) + '/historico' + qs)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(d => this.setState({ histLoading: false, histData: d }))
+      .catch(() => this.setState({ histLoading: false, histErro: true }));
+  }
+  fecharHistorico() { this.setState({ histOpen: false }); }
 
   componentDidMount() {
     this.tick();
@@ -1002,6 +1079,7 @@ class Component extends DCLogic {
       openMec: () => this.abrirMec(),
       icMecDrill: this.ic('maximize', 18, 'var(--maas-petroleo-25)'),
       ...this.buildMecDetail(),
+      ...this.buildHistorico(),
       icClock:    this.ic('clock',28,'var(--maas-verde)'),
       icOS:       this.ic('clipboard',22,'var(--maas-verde)'),
       icClientes: this.ic('users',22,'var(--maas-verde)'),
@@ -1143,6 +1221,8 @@ class Component extends DCLogic {
                  // Google Maps); a palavra "Externo" só aparece quando não há nome.
                  oficinaExterna: r.oficinaExterna || '',
                  oficinaMaps: r.oficinaMaps || '',
+                 // Clique no codBem abre o histórico do veículo (popup de 2º nível).
+                 abrirHist: () => this.abrirHistorico(r.codBem),
                  // Abre o Google Maps em NOVA aba. Via window.open (e não só
                  // target="_blank") porque o runtime do painel intercepta o
                  // clique do <a> e abriria na mesma aba.
@@ -1286,6 +1366,37 @@ class Component extends DCLogic {
       icSearch: this.ic('search', 34, 'var(--maas-petroleo-25)'),
       stop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
       closeDetail: () => this.setState({ detailId: null }),
+    };
+  }
+
+  // ---- Popup: histórico de manutenção do veículo (2º nível, sob demanda) --
+  buildHistorico() {
+    const s = this.state;
+    const stopH = (e) => { if (e && e.stopPropagation) e.stopPropagation(); };
+    const close = () => this.fecharHistorico();
+    const base = { closeHist: close, stopHist: stopH, icHistClose: this.ic('x', 22, 'var(--maas-petroleo)'),
+      icHistVeic: this.ic('truck', 26, 'var(--maas-verde)'), histItens: [] };
+    if (!s.histOpen) return { ...base, histOpen: false, histLoading: false, histErro: false,
+      histTemDados: false, histVazio: false, histPlaca: '', histNome: '', histCod: '', histTotal: 0, histCusto: '' };
+    const d = s.histData || {};
+    const itens = (d.itens || []).map(it => {
+      const st = it.status;
+      const fg = st === 'Cancelada' ? '#B83A32' : st === 'Aberta' ? 'var(--maas-laranja-escuro)' : 'var(--maas-verde-escuro-2)';
+      const bg = st === 'Cancelada' ? 'rgba(217,83,79,.10)' : st === 'Aberta' ? 'rgba(214,143,74,.12)' : 'var(--maas-verde-16)';
+      return { ...it, servCor: SERV_COR(it.serv), stFg: fg, stBg: bg, temDesc: !!it.desc };
+    });
+    return { ...base,
+      histOpen: true,
+      histLoading: !!s.histLoading,
+      histErro: !!s.histErro,
+      histTemDados: !s.histLoading && !s.histErro && itens.length > 0,
+      histVazio: !s.histLoading && !s.histErro && itens.length === 0,
+      histPlaca: d.placa || s.histCod || '',
+      histNome: d.nome || '',
+      histCod: s.histCod || d.codBem || '',
+      histTotal: d.total || itens.length,
+      histCusto: d.custoTotal || '',
+      histItens: itens,
     };
   }
 

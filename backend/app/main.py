@@ -152,6 +152,24 @@ async def api_resumo(request: Request):
     return ultimo_payload
 
 
+@app.get("/api/veiculo/{cod_bem}/historico")
+async def api_historico_veiculo(cod_bem: str, request: Request):
+    """Extrato completo de manutenção de UM veículo — buscado SOB DEMANDA (popup
+    do painel), fora do ciclo de 5 min para não pesar o WebSocket. Ver
+    kpis.historico_payload e bq.fetch_historico_veiculo."""
+    if not _token_ok(request.query_params.get("token", "")):
+        return JSONResponse({"detail": "acesso negado"}, status_code=401)
+    if config.DATA_SOURCE == "mock":
+        return {"codBem": cod_bem, "placa": "", "nome": "", "total": 0,
+                "custoTotal": "R$ 0,00", "itens": []}
+    if config.DATA_SOURCE == "csv":
+        from . import csv_source as fonte
+    else:
+        from . import bq as fonte
+    rows = await asyncio.to_thread(fonte.fetch_historico_veiculo, cod_bem)
+    return kpis.historico_payload(rows, cod_bem)
+
+
 @app.api_route("/healthz", methods=["GET", "HEAD"])
 async def healthz():
     # SEMPRE aberto (sem token) — é o que o UptimeRobot pinga a cada 5 min para

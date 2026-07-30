@@ -263,3 +263,29 @@ def fetch_oficina_externa() -> list[dict]:
     rows = _rows(sql)
     log.info("Oficina externa (STL_Custo→SA2 + endereço): %d O.S.", len(rows))
     return rows
+
+
+def fetch_historico_veiculo(cod_bem: str) -> list[dict]:
+    """Histórico de manutenção do veículo: TODAS as O.S. do `codBem` na STJ
+    (mais recentes primeiro), com placa/nome (ST9) e o custo total da O.S.
+    (mão de obra + material + terceiro + ...). Consulta PARAMETRIZADA porque
+    `cod_bem` vem da URL do endpoint. Ver historico_payload em kpis.py."""
+    from google.cloud import bigquery
+    sql = f"""
+        SELECT stj.ORDEM, stj.SOLICI, stj.DTORIGI, stj.SERVICO,
+               stj.SITUACA, stj.TERMINO, stj.OBSERVA, stj.DTMRFIM,
+               (IFNULL(stj.CUSTMDO,0)+IFNULL(stj.CUSTMAT,0)+IFNULL(stj.CUSTMAA,0)+
+                IFNULL(stj.CUSTMAS,0)+IFNULL(stj.CUSTTER,0)+IFNULL(stj.CUSTFER,0)) AS custo,
+               st9.placa AS placa, st9.nome AS nome
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.STJ` stj
+        LEFT JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.ST9_CadastroBem` st9
+          ON st9.bem = stj.CODBEM
+        WHERE stj.CODBEM = @cod
+        ORDER BY stj.DTORIGI DESC
+        LIMIT 300
+    """
+    job = _get_client().query(sql, job_config=bigquery.QueryJobConfig(
+        query_parameters=[bigquery.ScalarQueryParameter("cod", "STRING", cod_bem)]))
+    rows = [{k: _jsonable(v) for k, v in dict(r).items()} for r in job.result()]
+    log.info("Histórico veículo %s: %d O.S.", cod_bem, len(rows))
+    return rows

@@ -1071,3 +1071,56 @@ def build_payload(man_rows: list[dict],
         "localizacao": {"interna": len(loc_int), "externa": len(loc_ext)},
         "tipoVeiculo": tipo_veic,
     }
+
+
+# ======================= Histórico do veículo (on-demand) ==================
+# Popup de 2º nível: extrato completo de manutenção de UM veículo. Buscado sob
+# demanda (endpoint /api/veiculo/<codBem>/historico), NÃO no payload de 5 min.
+
+def _status_hist(row: dict) -> str:
+    """Status da O.S. no histórico: cancelada (situacao='C'), concluída
+    (termino='S') ou aberta."""
+    if _norm(row.get("SITUACA")) == "C":
+        return "Cancelada"
+    return "Concluída" if _norm(row.get("TERMINO")) == "S" else "Aberta"
+
+
+def _moeda(v: Any) -> str:
+    """Formata valor em Real (pt-BR): 1234.5 -> 'R$ 1.234,50'."""
+    try:
+        n = float(v or 0)
+    except (TypeError, ValueError):
+        n = 0.0
+    s = f"{n:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return "R$ " + s
+
+
+def _desc_txt(v: Any) -> str:
+    """Normaliza o texto livre do OBSERVA (quebras/traços do ERP -> uma linha)."""
+    return " ".join(str(v or "").split()).strip(" -")
+
+
+def historico_payload(rows: list[dict], cod_bem: str) -> dict:
+    """Modela o histórico de manutenção de um veículo para o popup (contrato com
+    o frontend). `rows` = fetch_historico_veiculo (STJ do codBem, desc por data)."""
+    placa = nome = ""
+    itens = []
+    for r in rows or []:
+        placa = placa or _s(r.get("placa"))
+        nome = nome or _s(r.get("nome"))
+        d = _dt_iso(r.get("DTORIGI"))
+        fim = _dt_compacta(r.get("DTMRFIM"))
+        itens.append({
+            "os":      _s(r.get("ORDEM")) or "—",
+            "ss":      _s(r.get("SOLICI")) or "—",
+            "data":    d.strftime("%d/%m/%Y") if d else "—",
+            "dataIso": d.isoformat() if d else None,
+            "fim":     fim.strftime("%d/%m/%Y") if fim else "",
+            "serv":    SERVICO_NOME.get(_s(r.get("SERVICO")), _s(r.get("SERVICO")) or "—"),
+            "status":  _status_hist(r),
+            "custo":   _moeda(r.get("custo")),
+            "desc":    _desc_txt(r.get("OBSERVA")),
+        })
+    total_custo = _moeda(sum(float(r.get("custo") or 0) for r in (rows or [])))
+    return {"codBem": cod_bem, "placa": placa, "nome": nome,
+            "total": len(itens), "custoTotal": total_custo, "itens": itens}

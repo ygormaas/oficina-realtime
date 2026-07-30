@@ -76,3 +76,8 @@ def fetch_oficina_externa() -> list[dict]:
     # Nome da oficina externa por O.S. só existe no BigQuery (STL_Custo→SA2);
     # offline não temos esse cruzamento, então o campo fica vazio.
     return []
+
+
+def fetch_historico_veiculo(cod_bem: str) -> list[dict]:
+    # Histórico completo por veículo só no BigQuery (STJ); offline vazio.
+    return []
