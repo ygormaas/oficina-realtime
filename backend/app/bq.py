@@ -289,3 +289,37 @@ def fetch_historico_veiculo(cod_bem: str) -> list[dict]:
     rows = [{k: _jsonable(v) for k, v in dict(r).items()} for r in job.result()]
     log.info("Histórico veículo %s: %d O.S.", cod_bem, len(rows))
     return rows
+
+
+def fetch_extrato_os(ordem: str) -> dict:
+    """Extrato de UMA O.S.: cabeçalho + valores (STJ) + mão de obra (STL_Custo
+    tipoReg='M', com nome/função da SRA_SRJ_Funcionarios). Consulta PARAMETRIZADA
+    (ordem vem da URL). Ver extrato_os_payload em kpis.py."""
+    from google.cloud import bigquery
+    def _cfg():
+        return bigquery.QueryJobConfig(
+            query_parameters=[bigquery.ScalarQueryParameter("o", "STRING", ordem)])
+    cab_sql = f"""
+        SELECT stj.ORDEM, stj.SOLICI, stj.CODBEM, stj.SERVICO, stj.SITUACA, stj.TERMINO,
+               stj.DTORIGI, stj.OBSERVA,
+               stj.CUSTMDO, stj.CUSTMAT, stj.CUSTMAA, stj.CUSTMAS, stj.CUSTTER, stj.CUSTFER,
+               st9.placa AS placa, st9.nome AS nome
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.STJ` stj
+        LEFT JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.ST9_CadastroBem` st9
+          ON st9.bem = stj.CODBEM
+        WHERE stj.ORDEM = @o
+        LIMIT 1
+    """
+    mdo_sql = f"""
+        SELECT stl.Matricula AS matricula, stl.quantId AS horas, stl.unidade AS unidade,
+               sra.RA_NOMECMP AS nome, sra.RJ_DESC AS funcao
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.STL_Custo` stl
+        LEFT JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.SRA_SRJ_Funcionarios` sra
+          ON sra.RA_MAT = stl.Matricula
+        WHERE stl.ordem = @o AND stl.tipoReg = 'M'
+    """
+    cli = _get_client()
+    cab = [{k: _jsonable(v) for k, v in dict(r).items()} for r in cli.query(cab_sql, job_config=_cfg()).result()]
+    mdo = [{k: _jsonable(v) for k, v in dict(r).items()} for r in cli.query(mdo_sql, job_config=_cfg()).result()]
+    log.info("Extrato O.S. %s: cab=%d mdo=%d", ordem, len(cab), len(mdo))
+    return {"cabecalho": cab[0] if cab else None, "maoDeObra": mdo}

@@ -1124,3 +1124,64 @@ def historico_payload(rows: list[dict], cod_bem: str) -> dict:
     total_custo = _moeda(sum(float(r.get("custo") or 0) for r in (rows or [])))
     return {"codBem": cod_bem, "placa": placa, "nome": nome,
             "total": len(itens), "custoTotal": total_custo, "itens": itens}
+
+
+# ======================= Extrato da O.S. (on-demand) =======================
+# Popup de 2º nível: descrição completa, veículo, valores e mão de obra de UMA
+# O.S. Buscado sob demanda (endpoint /api/os/<ordem>/extrato). Peças (itens)
+# ficam para o Bloco 2b.
+
+def extrato_os_payload(data: dict, ordem: str) -> dict:
+    """Modela o extrato de uma O.S. para o popup. `data` = fetch_extrato_os
+    ({cabecalho, maoDeObra})."""
+    cab = (data or {}).get("cabecalho")
+    if not cab:
+        return {"os": ordem, "existe": False, "maoDeObra": []}
+
+    def _f(k: str) -> float:
+        try:
+            return float(cab.get(k) or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    mdo_val  = _f("CUSTMDO")
+    material = _f("CUSTMAT") + _f("CUSTMAA") + _f("CUSTMAS")
+    terceiro = _f("CUSTTER")
+    ferram   = _f("CUSTFER")
+    total    = mdo_val + material + terceiro + ferram
+    d = _dt_iso(cab.get("DTORIGI"))
+
+    mao = []
+    for m in (data.get("maoDeObra") or []):
+        h = m.get("horas")
+        try:
+            htxt = f"{float(h):.2f}".replace(".", ",") + " h" if h else "—"
+        except (TypeError, ValueError):
+            htxt = "—"
+        mao.append({
+            "matricula": _s(m.get("matricula")),
+            "nome":  _s(m.get("nome")) or _s(m.get("matricula")) or "—",
+            "funcao": _s(m.get("funcao")),
+            "horas": htxt,
+        })
+    return {
+        "os":        _s(cab.get("ORDEM")) or ordem,
+        "ss":        _s(cab.get("SOLICI")) or "—",
+        "existe":    True,
+        "codBem":    _s(cab.get("CODBEM")),
+        "placa":     _s(cab.get("placa")),
+        "nome":      _s(cab.get("nome")),
+        "serv":      SERVICO_NOME.get(_s(cab.get("SERVICO")), _s(cab.get("SERVICO")) or "—"),
+        "status":    _status_hist(cab),
+        "data":      d.strftime("%d/%m/%Y") if d else "—",
+        "descricao": _desc_txt(cab.get("OBSERVA")),
+        "valores": {
+            "maoObra":    _moeda(mdo_val),
+            "material":   _moeda(material),
+            "terceiro":   _moeda(terceiro),
+            "ferramenta": _moeda(ferram),
+            "total":      _moeda(total),
+        },
+        "maoDeObra": mao,
+        "temMdo":    len(mao) > 0,
+    }

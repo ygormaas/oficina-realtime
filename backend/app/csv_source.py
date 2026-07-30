@@ -81,3 +81,8 @@ def fetch_oficina_externa() -> list[dict]:
 def fetch_historico_veiculo(cod_bem: str) -> list[dict]:
     # Histórico completo por veículo só no BigQuery (STJ); offline vazio.
     return []
+
+
+def fetch_extrato_os(ordem: str) -> dict:
+    # Extrato da O.S. (STJ + STL_Custo) só no BigQuery; offline vazio.
+    return {"cabecalho": None, "maoDeObra": []}
