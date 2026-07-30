@@ -29,9 +29,28 @@ _client = None
 def _get_client():
     global _client
     if _client is None:
+        import os
         from google.cloud import bigquery  # import tardio (modo mock/csv não precisa)
-        _client = bigquery.Client(project=config.BQ_PROJECT)
-        log.info("Cliente BigQuery criado para o projeto %s", config.BQ_PROJECT)
+
+        # Autenticação, em ordem de preferência:
+        #   1) GOOGLE_APPLICATION_CREDENTIALS_JSON = conteúdo do JSON da service
+        #      account colado direto numa variável de ambiente. É o modo usado
+        #      em hospedagem sem disco (ex.: Render), onde não há arquivo de chave.
+        #   2) GOOGLE_APPLICATION_CREDENTIALS = caminho para o arquivo JSON
+        #      (usado na máquina da TV, apontado pelo iniciar-painel-tv.bat), ou
+        #      o login `gcloud auth application-default login`. Comportamento
+        #      padrão do cliente — nada a fazer aqui.
+        cred_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+        if cred_json:
+            import json
+            from google.oauth2 import service_account
+            info = json.loads(cred_json)
+            creds = service_account.Credentials.from_service_account_info(info)
+            _client = bigquery.Client(project=config.BQ_PROJECT, credentials=creds)
+            log.info("Cliente BigQuery criado via GOOGLE_APPLICATION_CREDENTIALS_JSON (projeto %s)", config.BQ_PROJECT)
+        else:
+            _client = bigquery.Client(project=config.BQ_PROJECT)
+            log.info("Cliente BigQuery criado para o projeto %s", config.BQ_PROJECT)
     return _client
 
 
@@ -209,4 +228,33 @@ def fetch_tqr() -> list[dict]:
     """
     rows = _rows(sql)
     log.info("TQR: %d linhas", len(rows))
+    return rows
+
+
+def fetch_oficina_externa() -> list[dict]:
+    """Oficina externa (fornecedor) MAIS RECENTE por O.S.
+
+    Oficinas externas são cadastradas como fornecedor. Os lançamentos de
+    terceiro no STL_Custo (`localizacao_manutencao='EXTERNO'`) trazem
+    `key_fornecedor_loja`; o nome vem de `SA2_Localizacao_Fornecedor`. Uma O.S.
+    externa pode ter VÁRIAS oficinas (várias notas de terceiro) — pegamos a de
+    atividade mais recente (dtInicioCompleto desc). Ver _oficina_ext em kpis.py."""
+    sql = f"""
+        SELECT ordem, oficina, cidade FROM (
+          SELECT stl.ordem AS ordem, sa.nomeFornecedor AS oficina, sa.cidade AS cidade,
+                 ROW_NUMBER() OVER (
+                   PARTITION BY stl.ordem
+                   ORDER BY stl.dtInicioCompleto DESC, stl.dtFimCompleto DESC
+                 ) AS rn
+          FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.STL_Custo` stl
+          JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.SA2_Localizacao_Fornecedor` sa
+            ON stl.key_fornecedor_loja = sa.key_fornecedor_loja
+          WHERE stl.key_fornecedor_loja IS NOT NULL AND stl.key_fornecedor_loja <> '-'
+            AND UPPER(stl.localizacao_manutencao) LIKE '%EXTERN%'
+        )
+        WHERE rn = 1
+        LIMIT {config.BQ_MAX_ROWS}
+    """
+    rows = _rows(sql)
+    log.info("Oficina externa (STL_Custo→SA2): %d O.S.", len(rows))
     return rows

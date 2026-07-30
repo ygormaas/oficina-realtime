@@ -70,11 +70,13 @@ async def _calcular_payload() -> dict:
     prev = await asyncio.to_thread(fonte.fetch_preventivas)
     tqr  = await asyncio.to_thread(fonte.fetch_tqr)
     ss   = await asyncio.to_thread(fonte.fetch_ss_aguardando)
+    ofi  = await asyncio.to_thread(fonte.fetch_oficina_externa)
     # "Reservas no Limite" sai de bem_rows (estoque 02 por contrato+lote) +
     # mon_rows (Xbemre em uso) — não há mais consulta de portaria. Ver kpis.py.
     return kpis.build_payload(man, mon_rows=mon, bem_rows=bem,
                               mecanicos_rows=mec, mecanicos_os_rows=mecos,
-                              prev_rows=prev, tqr_rows=tqr, ss_rows=ss)
+                              prev_rows=prev, tqr_rows=tqr, ss_rows=ss,
+                              oficina_rows=ofi)
 
 
 async def _broadcast(payload: dict) -> None:
@@ -150,10 +152,12 @@ async def api_resumo(request: Request):
     return ultimo_payload
 
 
-@app.get("/healthz")
+@app.api_route("/healthz", methods=["GET", "HEAD"])
 async def healthz():
     # SEMPRE aberto (sem token) — é o que o UptimeRobot pinga a cada 5 min para
-    # manter o serviço acordado no plano free do Render.
+    # manter o serviço acordado no plano free do Render. Aceita HEAD também: o
+    # UptimeRobot usa HEAD por padrão e o FastAPI não o adiciona sozinho num
+    # @app.get (sem isto, o HEAD vaza para o mount de estáticos e vira 404).
     return {"ok": True, "clientes": len(clientes), "temDados": ultimo_payload is not None}
 
 

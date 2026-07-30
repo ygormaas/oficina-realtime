@@ -210,14 +210,22 @@ def _mobilizado(row: dict) -> bool:
 
 def _local_veiculo(row: dict) -> str:
     """Onde o veículo está: 'Interna' / 'Externa' (STJ_Manutencao.localizacao_veiculo
-    = 'OFICINA INTERNA'/'OFICINA EXTERNA'). A base NÃO guarda o nome da oficina
-    externa, só o flag. '—' quando não informado."""
+    = 'OFICINA INTERNA'/'OFICINA EXTERNA'). O NOME da oficina externa vem à parte,
+    de _oficina_ext (STL_Custo→SA2). '—' quando não informado."""
     lv = _norm(row.get("localizacao_veiculo"))
     if "EXTERN" in lv:
         return "Externo"
     if "INTERN" in lv:
         return "Interno"
     return "—"
+
+
+def _oficina_ext(row: dict, oficina_por_ordem: dict | None) -> str:
+    """Nome da oficina EXTERNA da O.S. (fornecedor mais recente) — só quando o
+    veículo está em oficina externa; senão vazio. Ver fetch_oficina_externa."""
+    if _local_veiculo(row) != "Externo":
+        return ""
+    return (oficina_por_ordem or {}).get(_s(row.get("ordem")), "")
 
 
 def _monitoramento_por_ordem(mon_rows: list[dict]) -> dict[str, dict]:
@@ -712,7 +720,8 @@ def _detalhe_de_mon(mon: dict, bem_idx: dict | None = None,
 
 def _linha_detalhe(row: dict, bem_idx: dict | None = None,
                    mon_por_ordem: dict | None = None,
-                   agora: datetime | None = None) -> dict:
+                   agora: datetime | None = None,
+                   oficina_por_ordem: dict | None = None) -> dict:
     """Uma linha da tabela de drill-down (contrato do frontend).
 
     A reserva mora na TQB, não no STJ — por isso `mon_por_ordem`, para achar o
@@ -742,6 +751,7 @@ def _linha_detalhe(row: dict, bem_idx: dict | None = None,
         "sla":         _sla_cc_txt(mon),   # prazo do SLA de cláusula (drill-down)
         "mobil":       "Mobilizado" if _mobilizado(row) else "Não mobilizado",
         "local":       _local_veiculo(row),
+        "oficinaExterna": _oficina_ext(row, oficina_por_ordem),
         "serv":        _nome_servico(row),
         "st":          _situacao_real(mon, agora or datetime.now(TZ_BR), _nome_servico(row)),
     }
@@ -815,6 +825,7 @@ def build_payload(man_rows: list[dict],
                   tqr_rows: list[dict] | None = None,
                   ss_rows: list[dict] | None = None,
                   mecanicos_os_rows: list[dict] | None = None,
+                  oficina_rows: list[dict] | None = None,
                   agora: datetime | None = None) -> dict:
     """
     Devolve o JSON que o painel consome. As REGRAS seguem as medidas DAX do
@@ -839,6 +850,10 @@ def build_payload(man_rows: list[dict],
     bem_idx = {_s(b.get("bem")): {"placa": _s(b.get("placa")), "nome": _s(b.get("nome")),
                                   "contrato": _s(b.get("numeroContrato"))}
                for b in bem_rows if _s(b.get("bem"))}
+    # Nome da oficina externa (fornecedor mais recente) por O.S. — ver
+    # fetch_oficina_externa e _oficina_ext.
+    oficina_por_ordem = {_s(o.get("ordem")): _s(o.get("oficina"))
+                         for o in (oficina_rows or []) if _s(o.get("ordem"))}
 
     # O.S. abertas = termino='N' (situacao≠'C'); cada O.S. conta (ver _abertas_os).
     # Desvia do filtro-mestre qtdRep=0 do manutest, que escondia O.S. reprovadas.
@@ -982,15 +997,15 @@ def build_payload(man_rows: list[dict],
     # (_ordenar_por_abertura já usa desc=True por padrão).
     detalhes = {
         "osForaPrazo": _ordenar_por_abertura([_detalhe_de_mon(m, bem_idx, man_por_ordem, agora) for m in os_fora]),
-        "osAbertas":   _ordenar_por_abertura([_linha_detalhe(r, bem_idx, mon_por_ordem, agora) for r in abertas], desc=True),
-        "sos":         _ordenar_por_abertura([_linha_detalhe(r, bem_idx, mon_por_ordem, agora) for r in sos]),
+        "osAbertas":   _ordenar_por_abertura([_linha_detalhe(r, bem_idx, mon_por_ordem, agora, oficina_por_ordem) for r in abertas], desc=True),
+        "sos":         _ordenar_por_abertura([_linha_detalhe(r, bem_idx, mon_por_ordem, agora, oficina_por_ordem) for r in sos]),
         "clausula":    _ordenar_por_abertura([_detalhe_de_mon(m, bem_idx, man_por_ordem, agora) for m in clausula_rows]),
         "clientesEsp": _ordenar_por_abertura([_detalhe_de_mon(m, bem_idx, man_por_ordem, agora) for m in clientes_rows]),
         "ssAguardando":_ordenar_por_abertura([_detalhe_de_mon(m, bem_idx, man_por_ordem, agora) for m in ss_aguardando], desc=True),
-        "qualidade":   _ordenar_por_abertura([_linha_detalhe(r, bem_idx, mon_por_ordem, agora) for r in qualidade], desc=True),
-        "retorno":     _ordenar_por_abertura([_linha_detalhe(r, bem_idx, mon_por_ordem, agora) for r in retorno], desc=True),
+        "qualidade":   _ordenar_por_abertura([_linha_detalhe(r, bem_idx, mon_por_ordem, agora, oficina_por_ordem) for r in qualidade], desc=True),
+        "retorno":     _ordenar_por_abertura([_linha_detalhe(r, bem_idx, mon_por_ordem, agora, oficina_por_ordem) for r in retorno], desc=True),
         "veiculos":    _ordenar_por_abertura([
-            _linha_detalhe(r, bem_idx, mon_por_ordem, agora)
+            _linha_detalhe(r, bem_idx, mon_por_ordem, agora, oficina_por_ordem)
             for r in abertas], desc=True),
         # Lista de CONTRATOS (não O.S.): estoque × usados por contrato + quebra
         # por lote. Layout próprio no frontend (não a tabela padrão).

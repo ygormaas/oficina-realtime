@@ -70,3 +70,9 @@ def fetch_preventivas() -> list[dict]:
 
 def fetch_tqr() -> list[dict]:
     return _opcional("TQR.csv", "tipo de veículo (Pesada/Leve)")
+
+
+def fetch_oficina_externa() -> list[dict]:
+    # Nome da oficina externa por O.S. só existe no BigQuery (STL_Custo→SA2);
+    # offline não temos esse cruzamento, então o campo fica vazio.
+    return []
