@@ -234,12 +234,21 @@ def _oficina_ext(row: dict, oficina_por_ordem: dict | None) -> dict:
     o = (oficina_por_ordem or {}).get(_s(row.get("ordem")))
     if not o or not o.get("nome"):
         return vazio
+    # Busca por ENDEREÇO + CEP, SEM o nome do estabelecimento: o nome fazia o
+    # Google buscar o negócio e mostrar várias oficinas parecidas na região; o
+    # endereço com CEP geocodifica para um ponto (normalmente um pino só). Não há
+    # lat/long da oficina na base (checado: só sinistros têm coordenada — do
+    # acidente). Ver [[oficina-externa-endereco]].
     logr = o.get("logradouro", "")
     if logr and o.get("numero"):
         logr = f"{logr} {o['numero']}"
-    partes = [p for p in (o["nome"], logr, o.get("bairro", ""),
-                          o.get("cidade", ""), o.get("estado", ""), o.get("cep", "")) if p]
-    maps = "https://www.google.com/maps/search/?api=1&query=" + quote_plus(", ".join(partes))
+    cep_d = "".join(ch for ch in o.get("cep", "") if ch.isdigit())
+    cep = f"{cep_d[:5]}-{cep_d[5:]}" if len(cep_d) == 8 else o.get("cep", "")
+    end = [p for p in (logr, o.get("bairro", ""), o.get("cidade", ""), o.get("estado", ""), cep) if p]
+    # Endereço presente → ponto preciso; sem endereço, cai para nome + cidade.
+    consulta = ", ".join(end) if end else \
+        ", ".join(p for p in (o["nome"], o.get("cidade", ""), o.get("estado", "")) if p)
+    maps = "https://www.google.com/maps/search/?api=1&query=" + quote_plus(consulta)
     return {"nome": o["nome"], "maps": maps}
 
 
