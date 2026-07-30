@@ -223,16 +223,23 @@ def _local_veiculo(row: dict) -> str:
 
 def _oficina_ext(row: dict, oficina_por_ordem: dict | None) -> dict:
     """Oficina EXTERNA da O.S. (fornecedor mais recente): {nome, maps}, onde
-    `maps` é o link do Google Maps (busca por nome + cidade/estado). Vazio
-    quando o veículo não está em oficina externa. Ver fetch_oficina_externa."""
+    `maps` é o link do Google Maps. A busca combina NOME + ENDEREÇO (logradouro
+    nº, bairro, cidade/UF, CEP) do cadastro do fornecedor (SA2) — dá ao Google o
+    estabelecimento E a localização, ficando bem mais preciso que só o nome. Não
+    há lat/long na base. Vazio quando o veículo não está em oficina externa.
+    Ver fetch_oficina_externa."""
     vazio = {"nome": "", "maps": ""}
     if _local_veiculo(row) != "Externo":
         return vazio
     o = (oficina_por_ordem or {}).get(_s(row.get("ordem")))
     if not o or not o.get("nome"):
         return vazio
-    consulta = " ".join(x for x in (o["nome"], o.get("cidade", ""), o.get("estado", "")) if x)
-    maps = "https://www.google.com/maps/search/?api=1&query=" + quote_plus(consulta)
+    logr = o.get("logradouro", "")
+    if logr and o.get("numero"):
+        logr = f"{logr} {o['numero']}"
+    partes = [p for p in (o["nome"], logr, o.get("bairro", ""),
+                          o.get("cidade", ""), o.get("estado", ""), o.get("cep", "")) if p]
+    maps = "https://www.google.com/maps/search/?api=1&query=" + quote_plus(", ".join(partes))
     return {"nome": o["nome"], "maps": maps}
 
 
@@ -864,7 +871,11 @@ def build_payload(man_rows: list[dict],
     # para o link do Google Maps. Ver fetch_oficina_externa e _oficina_ext.
     oficina_por_ordem = {_s(o.get("ordem")): {"nome": _s(o.get("oficina")),
                                               "cidade": _s(o.get("cidade")),
-                                              "estado": _s(o.get("estado"))}
+                                              "estado": _s(o.get("estado")),
+                                              "logradouro": _s(o.get("logradouro")),
+                                              "numero": _s(o.get("numero")),
+                                              "bairro": _s(o.get("bairro")),
+                                              "cep": _s(o.get("cep"))}
                          for o in (oficina_rows or []) if _s(o.get("ordem"))}
 
     # O.S. abertas = termino='N' (situacao≠'C'); cada O.S. conta (ver _abertas_os).

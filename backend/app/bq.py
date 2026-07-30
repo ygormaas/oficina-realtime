@@ -240,9 +240,11 @@ def fetch_oficina_externa() -> list[dict]:
     externa pode ter VÁRIAS oficinas (várias notas de terceiro) — pegamos a de
     atividade mais recente (dtInicioCompleto desc). Ver _oficina_ext em kpis.py."""
     sql = f"""
-        SELECT ordem, oficina, cidade, estado FROM (
+        SELECT ordem, oficina, cidade, estado, logradouro, numero, bairro, cep FROM (
           SELECT stl.ordem AS ordem, sa.nomeFornecedor AS oficina,
                  sa.cidade AS cidade, sa.estado AS estado,
+                 saf.`end` AS logradouro, saf.nrEnd AS numero,
+                 saf.bairro AS bairro, saf.cep AS cep,
                  ROW_NUMBER() OVER (
                    PARTITION BY stl.ordem
                    ORDER BY stl.dtInicioCompleto DESC, stl.dtFimCompleto DESC
@@ -250,6 +252,8 @@ def fetch_oficina_externa() -> list[dict]:
           FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.STL_Custo` stl
           JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.SA2_Localizacao_Fornecedor` sa
             ON stl.key_fornecedor_loja = sa.key_fornecedor_loja
+          LEFT JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.SA2_Fornecedor` saf
+            ON CONCAT(saf.cod, '-', saf.loja) = stl.key_fornecedor_loja
           WHERE stl.key_fornecedor_loja IS NOT NULL AND stl.key_fornecedor_loja <> '-'
             AND UPPER(stl.localizacao_manutencao) LIKE '%EXTERN%'
         )
@@ -257,5 +261,5 @@ def fetch_oficina_externa() -> list[dict]:
         LIMIT {config.BQ_MAX_ROWS}
     """
     rows = _rows(sql)
-    log.info("Oficina externa (STL_Custo→SA2): %d O.S.", len(rows))
+    log.info("Oficina externa (STL_Custo→SA2 + endereço): %d O.S.", len(rows))
     return rows
