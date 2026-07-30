@@ -59,6 +59,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone, timedelta
 from typing import Any
+from urllib.parse import quote_plus
 
 from . import config
 
@@ -220,12 +221,19 @@ def _local_veiculo(row: dict) -> str:
     return "—"
 
 
-def _oficina_ext(row: dict, oficina_por_ordem: dict | None) -> str:
-    """Nome da oficina EXTERNA da O.S. (fornecedor mais recente) — só quando o
-    veículo está em oficina externa; senão vazio. Ver fetch_oficina_externa."""
+def _oficina_ext(row: dict, oficina_por_ordem: dict | None) -> dict:
+    """Oficina EXTERNA da O.S. (fornecedor mais recente): {nome, maps}, onde
+    `maps` é o link do Google Maps (busca por nome + cidade/estado). Vazio
+    quando o veículo não está em oficina externa. Ver fetch_oficina_externa."""
+    vazio = {"nome": "", "maps": ""}
     if _local_veiculo(row) != "Externo":
-        return ""
-    return (oficina_por_ordem or {}).get(_s(row.get("ordem")), "")
+        return vazio
+    o = (oficina_por_ordem or {}).get(_s(row.get("ordem")))
+    if not o or not o.get("nome"):
+        return vazio
+    consulta = " ".join(x for x in (o["nome"], o.get("cidade", ""), o.get("estado", "")) if x)
+    maps = "https://www.google.com/maps/search/?api=1&query=" + quote_plus(consulta)
+    return {"nome": o["nome"], "maps": maps}
 
 
 def _monitoramento_por_ordem(mon_rows: list[dict]) -> dict[str, dict]:
@@ -733,6 +741,7 @@ def _linha_detalhe(row: dict, bem_idx: dict | None = None,
     placa, nome = _placa_nome(str(row.get("codBem") or "").strip(), bem_idx)
     resPlaca, resNome, resSt = _reserva_de_mon(mon, bem_idx)
     prevTxt, prevAtraso = _previsao_entrega(row, agora or datetime.now(TZ_BR))
+    ofi = _oficina_ext(row, oficina_por_ordem)   # {nome, maps} da oficina externa
     return {
         "abertura":    _fmt_curta(ab),
         "aberturaIso": ab.isoformat() if ab else None,
@@ -751,7 +760,8 @@ def _linha_detalhe(row: dict, bem_idx: dict | None = None,
         "sla":         _sla_cc_txt(mon),   # prazo do SLA de cláusula (drill-down)
         "mobil":       "Mobilizado" if _mobilizado(row) else "Não mobilizado",
         "local":       _local_veiculo(row),
-        "oficinaExterna": _oficina_ext(row, oficina_por_ordem),
+        "oficinaExterna": ofi["nome"],   # nome da oficina externa (STL_Custo→SA2)
+        "oficinaMaps":    ofi["maps"],   # link do Google Maps (nome + cidade/estado)
         "serv":        _nome_servico(row),
         "st":          _situacao_real(mon, agora or datetime.now(TZ_BR), _nome_servico(row)),
     }
@@ -850,9 +860,11 @@ def build_payload(man_rows: list[dict],
     bem_idx = {_s(b.get("bem")): {"placa": _s(b.get("placa")), "nome": _s(b.get("nome")),
                                   "contrato": _s(b.get("numeroContrato"))}
                for b in bem_rows if _s(b.get("bem"))}
-    # Nome da oficina externa (fornecedor mais recente) por O.S. — ver
-    # fetch_oficina_externa e _oficina_ext.
-    oficina_por_ordem = {_s(o.get("ordem")): _s(o.get("oficina"))
+    # Oficina externa (fornecedor mais recente) por O.S. — nome + cidade/estado
+    # para o link do Google Maps. Ver fetch_oficina_externa e _oficina_ext.
+    oficina_por_ordem = {_s(o.get("ordem")): {"nome": _s(o.get("oficina")),
+                                              "cidade": _s(o.get("cidade")),
+                                              "estado": _s(o.get("estado"))}
                          for o in (oficina_rows or []) if _s(o.get("ordem"))}
 
     # O.S. abertas = termino='N' (situacao≠'C'); cada O.S. conta (ver _abertas_os).

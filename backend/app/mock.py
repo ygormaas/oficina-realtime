@@ -24,7 +24,7 @@ def _linha(ab: datetime, ss: str, os_: str, placa: str, mobil: bool, serv: str, 
         "desc": "",   # descrição do serviço (STJ.observa)
         "previsao": "", "previsaoAtrasada": False,   # STJ.dtMpFim + horaMpFim
         "mobil": "Mobilizado" if mobil else "Não mobilizado",
-        "local": "", "oficinaExterna": "",   # nome da oficina externa (STL_Custo→SA2)
+        "local": "", "oficinaExterna": "", "oficinaMaps": "",   # oficina externa (STL_Custo→SA2)
         "serv": serv, "st": st,
     }
 

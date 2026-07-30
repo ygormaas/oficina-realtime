@@ -545,9 +545,14 @@
                 </sc-if>
                 <sc-if value="{{ r.ehVeiculos }}">
                 <span class="sans" style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-                  <span style="font-size:13px;font-weight:700;color:{{ r.localCor }};white-space:nowrap;">{{ r.localTxt }}</span>
+                  <sc-if value="{{ r.semOficina }}">
+                    <span style="font-size:13px;font-weight:700;color:{{ r.localCor }};white-space:nowrap;">{{ r.localTxt }}</span>
+                  </sc-if>
                   <sc-if value="{{ r.temOficina }}">
-                    <span style="font-size:11px;font-weight:600;color:var(--maas-petroleo-45);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ r.oficinaExterna }}">{{ r.oficinaExterna }}</span>
+                    <a href="{{ r.oficinaMaps }}" target="_blank" rel="noopener" title="Abrir no Google Maps — {{ r.oficinaExterna }}" style="display:inline-flex;align-items:center;gap:5px;min-width:0;font-size:13px;font-weight:800;color:var(--maas-petroleo);text-decoration:none;" style-hover="text-decoration:underline;">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--maas-laranja)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.oficinaExterna }}</span>
+                    </a>
                   </sc-if>
                 </span>
                 </sc-if>
@@ -1113,9 +1118,12 @@ class Component extends DCLogic {
                  mobilCor: r.mobil === 'Mobilizado' ? 'var(--maas-verde)' : 'var(--maas-petroleo-45)',
                  localTxt: r.local || '—',
                  localCor: (r.local === 'Externo') ? 'var(--maas-laranja)' : 'var(--maas-petroleo-60)',
-                 // Nome da oficina externa (só quando o veículo está em oficina externa).
+                 // Oficina externa: quando há nome, mostramos só o nome (link p/
+                 // Google Maps); a palavra "Externo" só aparece quando não há nome.
                  oficinaExterna: r.oficinaExterna || '',
+                 oficinaMaps: r.oficinaMaps || '',
                  temOficina: r.local === 'Externo' && !!r.oficinaExterna,
+                 semOficina: !(r.local === 'Externo' && !!r.oficinaExterna),
                  ssBar: g ? ssColor[r.ss] : 'transparent',
                  ssFg: g ? ssColor[r.ss] : 'var(--maas-petroleo-60)',
                  servCor: SERV_COR(r.serv),

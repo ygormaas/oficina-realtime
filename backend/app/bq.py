@@ -240,8 +240,9 @@ def fetch_oficina_externa() -> list[dict]:
     externa pode ter VÁRIAS oficinas (várias notas de terceiro) — pegamos a de
     atividade mais recente (dtInicioCompleto desc). Ver _oficina_ext em kpis.py."""
     sql = f"""
-        SELECT ordem, oficina, cidade FROM (
-          SELECT stl.ordem AS ordem, sa.nomeFornecedor AS oficina, sa.cidade AS cidade,
+        SELECT ordem, oficina, cidade, estado FROM (
+          SELECT stl.ordem AS ordem, sa.nomeFornecedor AS oficina,
+                 sa.cidade AS cidade, sa.estado AS estado,
                  ROW_NUMBER() OVER (
                    PARTITION BY stl.ordem
                    ORDER BY stl.dtInicioCompleto DESC, stl.dtFimCompleto DESC
