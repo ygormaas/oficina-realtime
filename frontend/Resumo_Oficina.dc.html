@@ -1004,16 +1004,25 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script>
-// Fator para PREENCHER a janela com o palco fixo de 1920×1080, SEM borda/
-// letterbox. Escala X e Y de forma independente: numa TV/monitor 16:9 sx≈sy
-// (sem distorção perceptível); quando a área do navegador NÃO é exatamente 16:9
-// (overscan da TV, barra do navegador, iframe do ReportLoad), estica de leve em
-// vez de deixar o fundo petróleo aparecer nas bordas. Devolve "sx,sy" — o
-// template usa em transform:scale(sx,sy) (CSS aceita dois fatores). Antes usava
-// Math.min (mantinha o 16:9 e centralizava, o que sobrava borda fora de 16:9).
+// Medida ROBUSTA da área visível. Em TV/kiosk o `window.innerHeight` às vezes
+// vem MENOR que a área realmente pintada (embed/iframe do ReportLoad, chrome do
+// navegador da TV, layout vs visual viewport) — aí o painel ficava menor que a
+// tela, sobrando área embaixo. Pegamos o MAIOR entre innerW/H, o clientW/H do
+// documento e o visualViewport: viés para PREENCHER edge-to-edge.
+const _VW = () => Math.max(window.innerWidth || 0,
+  (document.documentElement && document.documentElement.clientWidth) || 0,
+  (window.visualViewport && window.visualViewport.width) || 0);
+const _VH = () => Math.max(window.innerHeight || 0,
+  (document.documentElement && document.documentElement.clientHeight) || 0,
+  (window.visualViewport && window.visualViewport.height) || 0);
+
+// Fator para PREENCHER a tela com o palco fixo de 1920×1080, SEM borda/letterbox.
+// Escala X e Y de forma independente: em TV/monitor 16:9 sx≈sy (sem distorção
+// perceptível); fora de 16:9 estica de leve em vez de deixar borda. Devolve
+// "sx,sy" — o template usa em transform:scale(sx,sy) (CSS aceita dois fatores).
 const FIT_SCALE = () => {
-  const sx = Math.round(window.innerWidth  / 1920 * 10000) / 10000;
-  const sy = Math.round(window.innerHeight / 1080 * 10000) / 10000;
+  const sx = Math.round(_VW() / 1920 * 10000) / 10000;
+  const sy = Math.round(_VH() / 1080 * 10000) / 10000;
   return sx + ',' + sy;
 };
 
@@ -1119,13 +1128,37 @@ class Component extends DCLogic {
     this.fit();
     this._r = () => this.fit();
     window.addEventListener('resize', this._r);
+    window.addEventListener('load', this._r);
+    window.addEventListener('orientationchange', this._r);
+    // Navegador de TV/kiosk às vezes NÃO dispara 'resize' e só finaliza o layout
+    // (tamanho real da viewport) depois da 1ª pintura — fontes, chrome, embed.
+    // Por isso reaplicamos o fit: no visualViewport, num ResizeObserver do
+    // documento e em alguns ticks após a carga. Sem isto, o painel ficava com a
+    // escala calculada cedo demais (menor que a tela).
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', this._r);
+      window.visualViewport.addEventListener('scroll', this._r);
+    }
+    this._fitTicks = [80, 250, 600, 1200, 2500, 5000].map(ms => setTimeout(this._r, ms));
+    try {
+      this._ro = new ResizeObserver(this._r);
+      this._ro.observe(document.documentElement);
+    } catch (e) { /* ResizeObserver ausente: os ticks acima cobrem */ }
     this.connectWS();
   }
   componentWillUnmount() {
     clearInterval(this._t);
     clearInterval(this._ping);
     clearTimeout(this._rc);
+    (this._fitTicks || []).forEach(clearTimeout);
     window.removeEventListener('resize', this._r);
+    window.removeEventListener('load', this._r);
+    window.removeEventListener('orientationchange', this._r);
+    if (window.visualViewport) {
+      window.visualViewport.removeEventListener('resize', this._r);
+      window.visualViewport.removeEventListener('scroll', this._r);
+    }
+    if (this._ro) { try { this._ro.disconnect(); } catch (e) {} }
     if (this._ws) { this._ws.onclose = null; this._ws.close(); }
   }
 
