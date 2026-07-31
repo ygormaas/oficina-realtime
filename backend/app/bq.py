@@ -318,8 +318,25 @@ def fetch_extrato_os(ordem: str) -> dict:
           ON sra.RA_MAT = stl.Matricula
         WHERE stl.ordem = @o AND stl.tipoReg = 'M'
     """
+    # Peças/materiais aplicados: tipoReg='P'. As linhas seqrela='0' são o
+    # PLANEJADO/base (numSeq vazio); só as seqrela<>'0' são o consumo real —
+    # e a soma delas bate exatamente com CUSTMAT+CUSTMAA da STJ (validado
+    # 31/07/2026). Descrição do produto vem de MAAS_SB1 (B1_COD é único → sem
+    # fan-out). Agrupa por código (mesmo item entra várias vezes).
+    pecas_sql = f"""
+        SELECT stl.codigo AS codigo, ANY_VALUE(sb.B1_DESC) AS descricao,
+               SUM(stl.quantId) AS qtd, ANY_VALUE(stl.unidade) AS unidade,
+               SUM(stl.custo) AS total
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.STL_Custo` stl
+        LEFT JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.MAAS_SB1` sb
+          ON sb.B1_COD = stl.codigo
+        WHERE stl.ordem = @o AND stl.tipoReg = 'P' AND stl.seqrela <> '0'
+        GROUP BY stl.codigo
+        ORDER BY total DESC
+    """
     cli = _get_client()
     cab = [{k: _jsonable(v) for k, v in dict(r).items()} for r in cli.query(cab_sql, job_config=_cfg()).result()]
     mdo = [{k: _jsonable(v) for k, v in dict(r).items()} for r in cli.query(mdo_sql, job_config=_cfg()).result()]
-    log.info("Extrato O.S. %s: cab=%d mdo=%d", ordem, len(cab), len(mdo))
-    return {"cabecalho": cab[0] if cab else None, "maoDeObra": mdo}
+    pec = [{k: _jsonable(v) for k, v in dict(r).items()} for r in cli.query(pecas_sql, job_config=_cfg()).result()]
+    log.info("Extrato O.S. %s: cab=%d mdo=%d pecas=%d", ordem, len(cab), len(mdo), len(pec))
+    return {"cabecalho": cab[0] if cab else None, "maoDeObra": mdo, "pecas": pec}

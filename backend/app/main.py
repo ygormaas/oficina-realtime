@@ -177,7 +177,7 @@ async def api_extrato_os(ordem: str, request: Request):
     if not _token_ok(request.query_params.get("token", "")):
         return JSONResponse({"detail": "acesso negado"}, status_code=401)
     if config.DATA_SOURCE == "mock":
-        return {"os": ordem, "existe": False, "maoDeObra": []}
+        return {"os": ordem, "existe": False, "maoDeObra": [], "pecas": []}
     if config.DATA_SOURCE == "csv":
         from . import csv_source as fonte
     else:

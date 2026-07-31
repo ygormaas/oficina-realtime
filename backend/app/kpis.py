@@ -1136,7 +1136,7 @@ def extrato_os_payload(data: dict, ordem: str) -> dict:
     ({cabecalho, maoDeObra})."""
     cab = (data or {}).get("cabecalho")
     if not cab:
-        return {"os": ordem, "existe": False, "maoDeObra": []}
+        return {"os": ordem, "existe": False, "maoDeObra": [], "pecas": []}
 
     def _f(k: str) -> float:
         try:
@@ -1164,6 +1164,27 @@ def extrato_os_payload(data: dict, ordem: str) -> dict:
             "funcao": _s(m.get("funcao")),
             "horas": htxt,
         })
+
+    # Peças/materiais aplicados (STL_Custo tipoReg='P' agregado por código +
+    # descrição da SB1). A soma de `valor` reconcilia com o total "Material".
+    pecas = []
+    for p in (data.get("pecas") or []):
+        q = p.get("qtd")
+        try:
+            qtxt = f"{float(q):g}".replace(".", ",") if q is not None else "—"
+        except (TypeError, ValueError):
+            qtxt = "—"
+        un = _s(p.get("unidade"))
+        try:
+            pval = float(p.get("total") or 0)
+        except (TypeError, ValueError):
+            pval = 0.0
+        pecas.append({
+            "codigo":    _s(p.get("codigo")),
+            "descricao": _s(p.get("descricao")) or _s(p.get("codigo")) or "—",
+            "qtd":       (qtxt + (" " + un if un else "")) if qtxt != "—" else "—",
+            "valor":     _moeda(pval),
+        })
     return {
         "os":        _s(cab.get("ORDEM")) or ordem,
         "ss":        _s(cab.get("SOLICI")) or "—",
@@ -1184,4 +1205,6 @@ def extrato_os_payload(data: dict, ordem: str) -> dict:
         },
         "maoDeObra": mao,
         "temMdo":    len(mao) > 0,
+        "pecas":     pecas,
+        "temPecas":  len(pecas) > 0,
     }

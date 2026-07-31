@@ -702,6 +702,24 @@
               </div>
             </div>
             <div>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--maas-petroleo-45);">Peças e materiais</span>
+              <sc-if value="{{ extTemPecas }}">
+              <div style="margin-top:10px;display:flex;flex-direction:column;">
+                <sc-for list="{{ extPecas }}" as="pp" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:12px;padding:9px 2px;border-bottom:1px solid var(--border-subtle);">
+                    <span style="display:flex;flex-direction:column;gap:1px;flex:1;min-width:0;">
+                      <span class="sans" style="font-size:14px;font-weight:600;color:var(--maas-petroleo);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ pp.descricao }}</span>
+                      <span class="mono" style="font-size:11.5px;color:var(--maas-petroleo-45);">{{ pp.codigo }}</span>
+                    </span>
+                    <span class="mono" style="font-size:12.5px;font-weight:600;color:var(--maas-petroleo-60);flex:none;width:86px;text-align:right;">{{ pp.qtd }}</span>
+                    <span class="mono" style="font-size:13px;font-weight:700;color:var(--maas-petroleo);flex:none;width:104px;text-align:right;">{{ pp.valor }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              </sc-if>
+              <sc-if value="{{ extSemPecas }}"><span class="sans" style="display:block;margin-top:8px;font-size:13.5px;color:var(--maas-petroleo-45);">Sem peças ou materiais apontados nesta O.S.</span></sc-if>
+            </div>
+            <div>
               <span style="font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--maas-petroleo-45);">Mão de obra</span>
               <sc-if value="{{ extTemMdo }}">
               <div style="margin-top:10px;display:flex;flex-direction:column;">
@@ -1492,11 +1510,11 @@ class Component extends DCLogic {
     const stopE = (e) => { if (e && e.stopPropagation) e.stopPropagation(); };
     const close = () => this.fecharExtratoOS();
     const base = { closeExt: close, stopExt: stopE, icExtClose: this.ic('x', 22, 'var(--maas-petroleo)'),
-      icExtOS: this.ic('clipboard', 26, 'var(--maas-verde)'), extMdo: [], extValores: [] };
+      icExtOS: this.ic('clipboard', 26, 'var(--maas-verde)'), extMdo: [], extPecas: [], extValores: [] };
     if (!s.extOpen) return { ...base, extOpen: false, extLoading: false, extErro: false,
       extTemDados: false, extVazio: false, extOS: '', extSS: '', extPlaca: '', extNome: '',
       extServ: '', extServCor: 'transparent', extStatus: '', extStFg: '', extStBg: '', extData: '',
-      extDesc: '', extTemDesc: false, extTotal: '', extTemMdo: false };
+      extDesc: '', extTemDesc: false, extTotal: '', extTemMdo: false, extTemPecas: false, extSemPecas: false };
     const d = s.extData || {};
     const existe = !s.extLoading && !s.extErro && !!d.existe;
     const v = d.valores || {};
@@ -1530,6 +1548,9 @@ class Component extends DCLogic {
       extMdo: d.maoDeObra || [],
       extTemMdo: !!d.temMdo,
       extSemMdo: existe && !d.temMdo,
+      extPecas: d.pecas || [],
+      extTemPecas: !!d.temPecas,
+      extSemPecas: existe && !d.temPecas,
     };
   }
 
