@@ -1000,8 +1000,18 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script>
-// Fator para caber o palco fixo de 1920×1080 na janela atual.
-const FIT_SCALE = () => Math.round(Math.min(window.innerWidth / 1920, window.innerHeight / 1080) * 1000) / 1000;
+// Fator para PREENCHER a janela com o palco fixo de 1920×1080, SEM borda/
+// letterbox. Escala X e Y de forma independente: numa TV/monitor 16:9 sx≈sy
+// (sem distorção perceptível); quando a área do navegador NÃO é exatamente 16:9
+// (overscan da TV, barra do navegador, iframe do ReportLoad), estica de leve em
+// vez de deixar o fundo petróleo aparecer nas bordas. Devolve "sx,sy" — o
+// template usa em transform:scale(sx,sy) (CSS aceita dois fatores). Antes usava
+// Math.min (mantinha o 16:9 e centralizava, o que sobrava borda fora de 16:9).
+const FIT_SCALE = () => {
+  const sx = Math.round(window.innerWidth  / 1920 * 10000) / 10000;
+  const sy = Math.round(window.innerHeight / 1080 * 10000) / 10000;
+  return sx + ',' + sy;
+};
 
 // Cor por tipo de serviço — mesma família da paleta usada no agrupamento de S.S.
 const SERV_CORES = {
