@@ -190,10 +190,11 @@
             <!-- Tiles principais: situação da frota (grade 2×2) -->
             <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:13px;min-height:0;">
               <sc-for list="{{ veicTiles }}" as="f" hint-placeholder-count="4">
-                <div style="background:{{ f.bg }};border:1px solid {{ f.border }};border-radius:14px;padding:14px 18px;display:flex;flex-direction:column;justify-content:center;gap:9px;min-height:0;">
+                <div onClick="{{ f.onClick }}" role="button" tabindex="0" title="{{ f.titulo }}" style="background:{{ f.bg }};border:1px solid {{ f.border }};border-radius:14px;padding:14px 18px;display:flex;flex-direction:column;justify-content:center;gap:9px;min-height:0;cursor:{{ f.cur }};" style-hover="border-color:var(--maas-petroleo-25);">
                   <div style="display:flex;align-items:center;gap:12px;">
                     <span style="width:38px;height:38px;border-radius:11px;background:{{ f.badge }};display:inline-flex;align-items:center;justify-content:center;flex:none;">{{ f.iconEl }}</span>
                     <span style="font-size:40px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-1px;color:{{ f.num }};line-height:1;">{{ f.valor }}</span>
+                    <span style="margin-left:auto;display:inline-flex;">{{ f.drillEl }}</span>
                   </div>
                   <span style="font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--maas-petroleo-45);">{{ f.label }}</span>
                 </div>
@@ -826,6 +827,67 @@
     </div>
   </sc-if>
 
+  <!-- Popup: LISTA DE OFICINAS EXTERNAS (histórico agregado). Clica no tile
+       "Oficina externa" do bloco Veículos. Sob demanda (/api/oficinas/externas). -->
+  <sc-if value="{{ ofOpen }}">
+    <div onClick="{{ ofClose }}" style="position:fixed;inset:0;background:rgba(24,59,72,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:48px;">
+      <div onClick="{{ ofStop }}" style="width:min(1120px,94vw);height:86vh;background:var(--surface-page);border-radius:var(--radius-card-lg);box-shadow:0 32px 90px rgba(24,59,72,.4);display:flex;flex-direction:column;overflow:hidden;">
+        <!-- Cabeçalho -->
+        <div style="display:flex;align-items:center;gap:16px;padding:24px 32px;border-bottom:1px solid var(--border-subtle);flex:none;">
+          <span style="display:inline-flex;flex:none;width:52px;height:52px;border-radius:14px;background:var(--maas-verde-16);align-items:center;justify-content:center;">{{ icOfHead }}</span>
+          <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+            <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+              <span style="font-size:24px;font-weight:800;letter-spacing:-.4px;color:var(--maas-petroleo);">Oficinas externas</span>
+              <sc-if value="{{ ofTemDados }}"><span style="font-size:14px;font-weight:700;color:var(--maas-verde-escuro-2);background:var(--maas-verde-16);padding:3px 11px;border-radius:var(--radius-pill);white-space:nowrap;">{{ ofCount }} oficinas</span></sc-if>
+            </div>
+            <sc-if value="{{ ofTemDados }}"><span style="font-size:13.5px;color:var(--maas-petroleo-45);">Histórico · {{ ofTotalOS }} O.S. · {{ ofTotalVeic }} veículos · {{ ofCustoTotal }} transacionados</span></sc-if>
+          </div>
+          <sc-if value="{{ ofTemDados }}">
+          <span style="margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:9px;background:var(--surface-sunken);border:1px solid var(--border-subtle);border-radius:var(--radius-pill);padding:0 16px;height:42px;min-width:280px;">
+            <span style="display:inline-flex;flex:none;">{{ icOfBusca }}</span>
+            <input value="{{ ofFiltroQ }}" onInput="{{ onBuscarOf }}" placeholder="Buscar oficina, cidade ou endereço"
+                   style="flex:1;border:none;outline:none;background:transparent;font-family:var(--font-sans);font-size:14px;color:var(--maas-petroleo);min-width:0;">
+          </span>
+          </sc-if>
+          <span onClick="{{ ofClose }}" role="button" tabindex="0" title="Fechar" style="flex:none;width:40px;height:40px;border-radius:10px;border:1px solid var(--border-default);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--surface-sunken);">{{ icOfClose }}</span>
+        </div>
+        <!-- Corpo -->
+        <div style="overflow-y:auto;overflow-x:auto;flex:1;min-height:0;">
+          <sc-if value="{{ ofLoading }}"><div style="display:flex;align-items:center;justify-content:center;padding:80px 20px;font-size:16px;font-weight:600;color:var(--maas-petroleo-45);">Carregando oficinas…</div></sc-if>
+          <sc-if value="{{ ofErro }}"><div style="display:flex;align-items:center;justify-content:center;padding:80px 20px;font-size:16px;font-weight:600;color:#B83A32;">Não foi possível carregar a lista de oficinas.</div></sc-if>
+          <sc-if value="{{ ofVazio }}"><div style="display:flex;align-items:center;justify-content:center;padding:80px 20px;font-size:16px;font-weight:600;color:var(--maas-petroleo-45);">Nenhuma oficina externa na base.</div></sc-if>
+          <sc-if value="{{ ofVazioFiltro }}"><div style="display:flex;align-items:center;justify-content:center;padding:80px 20px;font-size:16px;font-weight:600;color:var(--maas-petroleo-45);">Nenhuma oficina com esse filtro.</div></sc-if>
+          <sc-if value="{{ ofHasRows }}" hint-placeholder-val="{{ true }}">
+            <div>
+            <div style="display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,96px) minmax(0,104px) minmax(0,150px);column-gap:16px;box-sizing:border-box;padding:14px 32px;background:var(--surface-sunken);position:sticky;top:0;z-index:2;">
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);">Oficina</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);text-align:right;">O.S.</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);text-align:right;">Veículos</span>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--maas-petroleo-45);text-align:right;">Custo total</span>
+            </div>
+            <sc-for list="{{ ofRows }}" as="o" hint-placeholder-count="10">
+              <div style="display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,96px) minmax(0,104px) minmax(0,150px);column-gap:16px;box-sizing:border-box;padding:14px 32px;border-bottom:1px solid var(--border-subtle);align-items:center;font-variant-numeric:tabular-nums;" style-hover="background:var(--surface-sunken);">
+                <span style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+                  <span onClick="{{ o.abrirMaps }}" role="button" tabindex="0" title="Abrir no Google Maps" class="sans" style="font-size:15px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:{{ o.mapsCur }};" style-hover="color:var(--maas-verde-escuro-2);">{{ o.nome }}</span>
+                  <sc-if value="{{ o.temEndereco }}"><span onClick="{{ o.abrirMaps }}" role="button" tabindex="0" title="Abrir no Google Maps" class="sans" style="font-size:12px;color:var(--maas-petroleo-45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:{{ o.mapsCur }};text-decoration:underline;text-decoration-color:var(--maas-petroleo-18);text-underline-offset:2px;">{{ o.endereco }}</span></sc-if>
+                </span>
+                <span class="mono" style="font-size:14px;font-weight:600;color:var(--maas-petroleo);text-align:right;">{{ o.os }}</span>
+                <span class="mono" style="font-size:14px;font-weight:600;color:var(--maas-petroleo);text-align:right;">{{ o.veic }}</span>
+                <span class="mono" style="font-size:14px;font-weight:700;color:var(--maas-petroleo);text-align:right;">{{ o.custo }}</span>
+              </div>
+            </sc-for>
+            </div>
+          </sc-if>
+        </div>
+        <!-- Rodapé -->
+        <div style="display:flex;align-items:center;gap:10px;padding:16px 32px;border-top:1px solid var(--border-subtle);flex:none;background:var(--surface-card);">
+          <span style="font-size:13px;color:var(--maas-petroleo-45);">Fonte: STL_Custo (terceiro + peças, externo) + SA2 (fornecedor/endereço). Custo = total transacionado.</span>
+          <span onClick="{{ ofClose }}" role="button" tabindex="0" style="margin-left:auto;font-size:14px;font-weight:700;color:#fff;background:var(--maas-petroleo);padding:11px 22px;border-radius:10px;cursor:pointer;" style-hover="background:var(--maas-petroleo-70);">Voltar ao painel</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
   <!-- Detalhamento da MÃO DE OBRA (clica em "Ver equipe" no card Capacidade ×
        demanda). Modal próprio, mais simples que o de O.S.: a base não liga o
        mecânico à ordem executada, então aqui é o efetivo em turno — quem são,
@@ -960,7 +1022,9 @@ class Component extends DCLogic {
             // Popup de 2º nível: extrato de UMA O.S. (sob demanda).
             extOpen: false, extLoading: false, extErro: false, extData: null, extOrdem: '',
             // Popup de 2º nível: extrato de UMA S.S. (sob demanda).
-            ssOpen: false, ssLoading: false, ssErro: false, ssData: null, ssNum: '' };
+            ssOpen: false, ssLoading: false, ssErro: false, ssData: null, ssNum: '',
+            // Popup: lista de oficinas externas (sob demanda) + busca.
+            ofOpen: false, ofLoading: false, ofErro: false, ofData: null, ofFiltroQ: '' };
 
   // Abrir/fechar o detalhamento sempre por aqui, para os filtros não vazarem
   // de um KPI para o outro.
@@ -1007,6 +1071,20 @@ class Component extends DCLogic {
       .catch(() => this.setState({ ssLoading: false, ssErro: true }));
   }
   fecharExtratoSS() { this.setState({ ssOpen: false }); }
+
+  // Lista de oficinas externas (histórico agregado) — SOB DEMANDA
+  // (/api/oficinas/externas). Clique no tile "Oficina externa".
+  abrirOficinas() {
+    this.setState({ ofOpen: true, ofLoading: true, ofErro: false, ofData: null, ofFiltroQ: '' });
+    const tok = new URLSearchParams(location.search).get('token');
+    const qs = tok ? ('?token=' + encodeURIComponent(tok)) : '';
+    fetch('/api/oficinas/externas' + qs)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(d => this.setState({ ofLoading: false, ofData: d }))
+      .catch(() => this.setState({ ofLoading: false, ofErro: true }));
+  }
+  fecharOficinas() { this.setState({ ofOpen: false }); }
+  onBuscarOficina(e) { this.setState({ ofFiltroQ: (e && e.target ? e.target.value : '') }); }
 
   componentDidMount() {
     this.tick();
@@ -1207,10 +1285,11 @@ class Component extends DCLogic {
     ];
     const mix = (v,p) => `color-mix(in srgb, ${v} ${p}, var(--surface-card))`;
     const veicTiles = [
-      { valor:Veic.mobilizados,    label:'Mobilizados',     iconEl:this.ic('car',20,'#fff'),    num:'var(--maas-verde)',   bg:mix('var(--maas-verde)','12%'),   badge:'var(--maas-verde)',        border:'color-mix(in srgb, var(--maas-verde) 30%, transparent)' },
-      { valor:Veic.naoMobilizados, label:'Não mobilizados', iconEl:this.ic('ban',20,'#fff'),    num:'var(--maas-laranja)', bg:mix('var(--maas-laranja)','12%'), badge:'var(--maas-laranja)',      border:'color-mix(in srgb, var(--maas-laranja) 30%, transparent)' },
-      { valor:Loc.interna,         label:'Oficina interna', iconEl:this.ic('home',20,'#fff'),   num:'var(--maas-petroleo)',bg:'rgba(24,59,72,.04)',             badge:'var(--maas-petroleo)',     border:'var(--border-subtle)' },
-      { valor:Loc.externa,         label:'Oficina externa', iconEl:this.ic('mapPin',20,'#fff'), num:'var(--maas-petroleo)',bg:'rgba(24,59,72,.04)',             badge:'var(--maas-petroleo-45)',  border:'var(--border-subtle)' },
+      { valor:Veic.mobilizados,    label:'Mobilizados',     iconEl:this.ic('car',20,'#fff'),    num:'var(--maas-verde)',   bg:mix('var(--maas-verde)','12%'),   badge:'var(--maas-verde)',        border:'color-mix(in srgb, var(--maas-verde) 30%, transparent)', cur:'default', titulo:'', onClick:null, drillEl:null },
+      { valor:Veic.naoMobilizados, label:'Não mobilizados', iconEl:this.ic('ban',20,'#fff'),    num:'var(--maas-laranja)', bg:mix('var(--maas-laranja)','12%'), badge:'var(--maas-laranja)',      border:'color-mix(in srgb, var(--maas-laranja) 30%, transparent)', cur:'default', titulo:'', onClick:null, drillEl:null },
+      { valor:Loc.interna,         label:'Oficina interna', iconEl:this.ic('home',20,'#fff'),   num:'var(--maas-petroleo)',bg:'rgba(24,59,72,.04)',             badge:'var(--maas-petroleo)',     border:'var(--border-subtle)', cur:'default', titulo:'', onClick:null, drillEl:null },
+      // Tile clicável: abre a lista agregada de oficinas externas (Bloco 4).
+      { valor:Loc.externa,         label:'Oficina externa', iconEl:this.ic('mapPin',20,'#fff'), num:'var(--maas-petroleo)',bg:'rgba(24,59,72,.04)',             badge:'var(--maas-petroleo-45)',  border:'var(--border-subtle)', cur:'pointer', titulo:'Ver todas as oficinas externas', onClick:() => this.abrirOficinas(), drillEl:this.ic('maximize',15,'var(--maas-petroleo-45)') },
     ];
 
     // 04 Análises — aging, preventivas, capacidade, prioridades
@@ -1284,6 +1363,7 @@ class Component extends DCLogic {
       ...this.buildHistorico(),
       ...this.buildExtratoOS(),
       ...this.buildExtratoSS(),
+      ...this.buildOficinas(),
       icClock:    this.ic('clock',28,'var(--maas-verde)'),
       icOS:       this.ic('clipboard',22,'var(--maas-verde)'),
       icClientes: this.ic('users',22,'var(--maas-verde)'),
@@ -1715,6 +1795,47 @@ class Component extends DCLogic {
       ssMdo: d.maoDeObra || [],
       ssTemMdo: !!d.temMdo,
       ssSemMdo: existe && !d.temMdo,
+    };
+  }
+
+  // ---- Popup: lista de oficinas externas (histórico agregado) ------------
+  // Sob demanda; busca livre por nome/cidade/endereço. Cada linha traz qtd O.S.,
+  // veículos e custo total, com link p/ o Google Maps.
+  buildOficinas() {
+    const s = this.state;
+    const stop = (e) => { if (e && e.stopPropagation) e.stopPropagation(); };
+    const close = () => this.fecharOficinas();
+    const base = { ofClose: close, ofStop: stop, icOfClose: this.ic('x', 22, 'var(--maas-petroleo)'),
+      icOfHead: this.ic('mapPin', 26, 'var(--maas-verde)'), icOfBusca: this.ic('search', 18, 'var(--maas-petroleo-45)'),
+      onBuscarOf: (e) => this.onBuscarOficina(e), ofRows: [] };
+    if (!s.ofOpen) return { ...base, ofOpen: false, ofLoading: false, ofErro: false,
+      ofTemDados: false, ofVazio: false, ofFiltroQ: '', ofCount: 0, ofTotalOS: 0, ofTotalVeic: 0,
+      ofCustoTotal: '', ofHasRows: false, ofVazioFiltro: false };
+    const d = s.ofData || {};
+    const todas = (d.oficinas || []);
+    const existe = !s.ofLoading && !s.ofErro && todas.length > 0;
+    const q = (s.ofFiltroQ || '').trim().toLowerCase();
+    const filtradas = q
+      ? todas.filter(o => [o.nome, o.cidadeUf, o.endereco].join(' ').toLowerCase().includes(q))
+      : todas;
+    const rows = filtradas.map(o => ({ ...o,
+      abrirMaps: o.maps ? () => window.open(o.maps, '_blank', 'noopener') : null,
+      mapsCur: o.maps ? 'pointer' : 'default',
+    }));
+    return { ...base,
+      ofOpen: true,
+      ofLoading: !!s.ofLoading,
+      ofErro: !!s.ofErro,
+      ofTemDados: existe,
+      ofVazio: !s.ofLoading && !s.ofErro && todas.length === 0,
+      ofFiltroQ: s.ofFiltroQ || '',
+      ofCount: d.total || 0,
+      ofTotalOS: d.totalOS || 0,
+      ofTotalVeic: d.totalVeic || 0,
+      ofCustoTotal: d.custoTotal || '',
+      ofRows: rows,
+      ofHasRows: existe && rows.length > 0,
+      ofVazioFiltro: existe && rows.length === 0,
     };
   }
 

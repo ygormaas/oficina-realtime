@@ -265,6 +265,51 @@ def fetch_oficina_externa() -> list[dict]:
     return rows
 
 
+def fetch_oficinas_externas() -> list[dict]:
+    """Lista AGREGADA de oficinas externas (histórico completo) para o Bloco 4:
+    por fornecedor+loja (`key_fornecedor_loja`), quantas O.S., quantos veículos
+    e o custo total transacionado (terceiro + peças, `seqrela<>'0'` p/ não contar
+    o planejado/base em duplicidade — ver [[novos-detalhamentos-blocos]]). Nome/
+    endereço vêm de SA2. Nº de veículos = DISTINCT `STJ.CODBEM` (o `STL.codBem`
+    vem vazio). Ver oficinas_externas_payload em kpis.py."""
+    sql = f"""
+      WITH ext AS (
+        SELECT stl.key_fornecedor_loja AS kfl, stl.ordem AS ordem,
+               stl.seqrela AS seqrela, stl.custo AS custo
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.STL_Custo` stl
+        WHERE stl.key_fornecedor_loja IS NOT NULL AND stl.key_fornecedor_loja <> '-'
+          AND UPPER(stl.localizacao_manutencao) LIKE '%EXTERN%'
+      ),
+      agg AS (
+        SELECT kfl, COUNT(DISTINCT ordem) AS os,
+               SUM(IF(seqrela <> '0', custo, 0)) AS custo
+        FROM ext GROUP BY kfl
+      ),
+      veic AS (
+        SELECT e.kfl AS kfl, COUNT(DISTINCT stj.CODBEM) AS veic
+        FROM (SELECT DISTINCT kfl, ordem FROM ext) e
+        LEFT JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.STJ` stj
+          ON stj.ORDEM = e.ordem
+        GROUP BY e.kfl
+      )
+      SELECT sa.nomeFornecedor AS oficina, sa.cidade AS cidade, sa.estado AS estado,
+             agg.os AS os, veic.veic AS veic, agg.custo AS custo,
+             saf.`end` AS logradouro, saf.nrEnd AS numero,
+             saf.bairro AS bairro, saf.cep AS cep
+      FROM agg
+      JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.SA2_Localizacao_Fornecedor` sa
+        ON sa.key_fornecedor_loja = agg.kfl
+      LEFT JOIN veic ON veic.kfl = agg.kfl
+      LEFT JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.SA2_Fornecedor` saf
+        ON CONCAT(saf.cod, '-', saf.loja) = agg.kfl
+      ORDER BY agg.custo DESC, agg.os DESC
+      LIMIT {config.BQ_MAX_ROWS}
+    """
+    rows = _rows(sql)
+    log.info("Oficinas externas (agregado): %d oficinas", len(rows))
+    return rows
+
+
 def fetch_historico_veiculo(cod_bem: str) -> list[dict]:
     """Histórico de manutenção do veículo: TODAS as O.S. do `codBem` na STJ
     (mais recentes primeiro), com placa/nome (ST9) e o custo total da O.S.

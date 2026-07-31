@@ -91,3 +91,8 @@ def fetch_extrato_os(ordem: str) -> dict:
 def fetch_extrato_ss(ss: str) -> dict:
     # Extrato da S.S. (STJ + TQB + STL_Custo) só no BigQuery; offline vazio.
     return {"ordens": [], "maoDeObra": []}
+
+
+def fetch_oficinas_externas() -> list[dict]:
+    # Lista agregada de oficinas externas só no BigQuery; offline vazio.
+    return []

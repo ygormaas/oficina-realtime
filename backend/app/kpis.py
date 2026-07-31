@@ -228,7 +228,7 @@ def _oficina_ext(row: dict, oficina_por_ordem: dict | None) -> dict:
     estabelecimento E a localização, ficando bem mais preciso que só o nome. Não
     há lat/long na base. Vazio quando o veículo não está em oficina externa.
     Ver fetch_oficina_externa."""
-    vazio = {"nome": "", "maps": ""}
+    vazio = {"nome": "", "maps": "", "endereco": ""}
     if _local_veiculo(row) != "Externo":
         return vazio
     o = (oficina_por_ordem or {}).get(_s(row.get("ordem")))
@@ -239,17 +239,37 @@ def _oficina_ext(row: dict, oficina_por_ordem: dict | None) -> dict:
     # endereço com CEP geocodifica para um ponto (normalmente um pino só). Não há
     # lat/long da oficina na base (checado: só sinistros têm coordenada — do
     # acidente). Ver [[oficina-externa-endereco]].
-    logr = o.get("logradouro", "")
+    return {"nome": o["nome"], "maps": _maps_url(o), "endereco": _endereco_txt(o)}
+
+
+def _cep_fmt(cep: Any) -> str:
+    """CEP só-dígitos → 00000-000; devolve o original se não tiver 8 dígitos."""
+    cep_d = "".join(ch for ch in str(cep or "") if ch.isdigit())
+    return f"{cep_d[:5]}-{cep_d[5:]}" if len(cep_d) == 8 else str(cep or "")
+
+
+def _endereco_txt(o: dict) -> str:
+    """Endereço legível da oficina: 'Logradouro nº, Bairro, Cidade/UF, CEP'."""
+    logr = o.get("logradouro", "") or ""
     if logr and o.get("numero"):
         logr = f"{logr} {o['numero']}"
-    cep_d = "".join(ch for ch in o.get("cep", "") if ch.isdigit())
-    cep = f"{cep_d[:5]}-{cep_d[5:]}" if len(cep_d) == 8 else o.get("cep", "")
-    end = [p for p in (logr, o.get("bairro", ""), o.get("cidade", ""), o.get("estado", ""), cep) if p]
-    # Endereço presente → ponto preciso; sem endereço, cai para nome + cidade.
+    cid_uf = "/".join(p for p in (o.get("cidade", ""), o.get("estado", "")) if p)
+    partes = [p for p in (logr, o.get("bairro", ""), cid_uf, _cep_fmt(o.get("cep", ""))) if p]
+    return ", ".join(partes)
+
+
+def _maps_url(o: dict) -> str:
+    """Link do Google Maps por ENDEREÇO + CEP (sem o nome — geocodifica p/ um
+    ponto único; ver [[oficina-externa-endereco]]). Sem endereço, cai para
+    nome + cidade/UF."""
+    logr = o.get("logradouro", "") or ""
+    if logr and o.get("numero"):
+        logr = f"{logr} {o['numero']}"
+    end = [p for p in (logr, o.get("bairro", ""), o.get("cidade", ""),
+                       o.get("estado", ""), _cep_fmt(o.get("cep", ""))) if p]
     consulta = ", ".join(end) if end else \
-        ", ".join(p for p in (o["nome"], o.get("cidade", ""), o.get("estado", "")) if p)
-    maps = "https://www.google.com/maps/search/?api=1&query=" + quote_plus(consulta)
-    return {"nome": o["nome"], "maps": maps}
+        ", ".join(p for p in (o.get("nome", ""), o.get("cidade", ""), o.get("estado", "")) if p)
+    return "https://www.google.com/maps/search/?api=1&query=" + quote_plus(consulta)
 
 
 def _monitoramento_por_ordem(mon_rows: list[dict]) -> dict[str, dict]:
@@ -1315,4 +1335,49 @@ def extrato_ss_payload(data: dict, ss: str) -> dict:
         "ordens":    ordens,
         "maoDeObra": mao,
         "temMdo":    len(mao) > 0,
+    }
+
+
+# ===================== Oficinas externas (on-demand) =======================
+# Bloco 4: lista agregada de oficinas externas (histórico) com indicadores.
+# Endpoint /api/oficinas/externas. Clique no tile "Oficina externa".
+def oficinas_externas_payload(rows: list[dict]) -> dict:
+    """Modela a lista de oficinas externas. `rows` = fetch_oficinas_externas."""
+    oficinas = []
+    tot_os = tot_veic = 0
+    tot_custo = 0.0
+    for r in rows or []:
+        o = {
+            "logradouro": _s(r.get("logradouro")),
+            "numero":     _s(r.get("numero")),
+            "bairro":     _s(r.get("bairro")),
+            "cidade":     _s(r.get("cidade")),
+            "estado":     _s(r.get("estado")),
+            "cep":        _s(r.get("cep")),
+            "nome":       _s(r.get("oficina")),
+        }
+        try:
+            custo = float(r.get("custo") or 0)
+        except (TypeError, ValueError):
+            custo = 0.0
+        n_os = int(r.get("os") or 0)
+        n_veic = int(r.get("veic") or 0)
+        tot_os += n_os; tot_veic += n_veic; tot_custo += custo
+        endereco = _endereco_txt(o)
+        oficinas.append({
+            "nome":       o["nome"] or "—",
+            "cidadeUf":   "/".join(p for p in (o["cidade"], o["estado"]) if p),
+            "endereco":   endereco,
+            "temEndereco": bool(endereco),
+            "maps":       _maps_url(o),
+            "os":         n_os,
+            "veic":       n_veic,
+            "custo":      _moeda(custo),
+        })
+    return {
+        "total":      len(oficinas),
+        "totalOS":    tot_os,
+        "totalVeic":  tot_veic,
+        "custoTotal": _moeda(tot_custo),
+        "oficinas":   oficinas,
     }

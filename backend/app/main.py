@@ -203,6 +203,23 @@ async def api_extrato_ss(ss: str, request: Request):
     return kpis.extrato_ss_payload(data, ss)
 
 
+@app.get("/api/oficinas/externas")
+async def api_oficinas_externas(request: Request):
+    """Lista AGREGADA de oficinas externas (histórico) com indicadores — SOB
+    DEMANDA (clique no tile 'Oficina externa'). Ver kpis.oficinas_externas_payload
+    e bq.fetch_oficinas_externas."""
+    if not _token_ok(request.query_params.get("token", "")):
+        return JSONResponse({"detail": "acesso negado"}, status_code=401)
+    if config.DATA_SOURCE == "mock":
+        return {"total": 0, "totalOS": 0, "totalVeic": 0, "custoTotal": "R$ 0,00", "oficinas": []}
+    if config.DATA_SOURCE == "csv":
+        from . import csv_source as fonte
+    else:
+        from . import bq as fonte
+    rows = await asyncio.to_thread(fonte.fetch_oficinas_externas)
+    return kpis.oficinas_externas_payload(rows)
+
+
 @app.api_route("/healthz", methods=["GET", "HEAD"])
 async def healthz():
     # SEMPRE aberto (sem token) — é o que o UptimeRobot pinga a cada 5 min para
