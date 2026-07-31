@@ -503,7 +503,7 @@
             </div>
             <sc-for list="{{ detailRows }}" as="r" hint-placeholder-count="6">
               <div class="dtl-grid" style="display:grid;grid-template-columns:{{ r.gridCols }};column-gap:11px;box-sizing:border-box;padding:15px 28px;border-bottom:1px solid var(--border-subtle);border-left:4px solid {{ r.ssBar }};align-items:center;font-variant-numeric:tabular-nums;" style-hover="background:var(--surface-sunken);">
-                <span class="mono" style="font-size:14px;font-weight:{{ r.ssWeight }};color:{{ r.ssFg }};">{{ r.ss }}</span>
+                <span onClick="{{ r.abrirSS }}" role="button" tabindex="0" title="Ver extrato completo da S.S." class="mono" style="font-size:14px;font-weight:{{ r.ssWeight }};color:{{ r.ssFg }};cursor:pointer;text-decoration:underline;text-decoration-color:var(--maas-petroleo-25);text-underline-offset:3px;" style-hover="color:var(--maas-verde-escuro-2);">{{ r.ss }}</span>
                 <sc-if value="{{ r.naoEhVeiculos }}" hint-placeholder-val="{{ true }}">
                 <span style="display:flex;flex-direction:column;gap:1px;">
                   <span class="mono" style="font-size:13px;font-weight:700;color:var(--maas-petroleo);white-space:nowrap;">{{ r.dataDia }}</span>
@@ -650,6 +650,91 @@
               </sc-if>
             </div>
           </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Popup: EXTRATO COMPLETO DA S.S. (clica na S.S. numa linha de drill-down).
+       2º nível. A S.S. agrupa uma ou mais O.S.; cada O.S. reabre o extrato da
+       O.S. por cima. Sob demanda (/api/ss/<ss>/extrato). Fica ANTES do popup de
+       O.S. no DOM p/ que, com os dois abertos, a O.S. (mesmo z-index) empilhe. -->
+  <sc-if value="{{ ssOpen }}">
+    <div onClick="{{ closeSS }}" style="position:fixed;inset:0;background:rgba(24,59,72,.55);display:flex;align-items:center;justify-content:center;z-index:200;padding:48px;">
+      <div onClick="{{ stopSS }}" style="width:min(1000px,92vw);height:86vh;background:var(--surface-page);border-radius:var(--radius-card-lg);box-shadow:0 32px 90px rgba(24,59,72,.4);display:flex;flex-direction:column;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:16px;padding:24px 30px;border-bottom:1px solid var(--border-subtle);flex:none;">
+          <span style="display:inline-flex;flex:none;width:50px;height:50px;border-radius:14px;background:var(--maas-verde-16);align-items:center;justify-content:center;">{{ icSSHead }}</span>
+          <div style="display:flex;flex-direction:column;gap:4px;min-width:0;">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <span style="font-size:22px;font-weight:800;letter-spacing:-.4px;color:var(--maas-petroleo);">S.S. {{ ssNum }}</span>
+              <sc-if value="{{ ssTemDados }}">
+              <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:8px;height:8px;border-radius:50%;background:{{ ssServCor }};"></span><span style="font-size:13.5px;font-weight:600;color:var(--maas-petroleo);">{{ ssServResumo }}</span></span>
+              <span style="font-size:12px;font-weight:700;color:{{ ssStFg }};background:{{ ssStBg }};padding:3px 11px;border-radius:var(--radius-pill);">{{ ssStatus }}</span>
+              </sc-if>
+            </div>
+            <sc-if value="{{ ssTemDados }}">
+            <span class="sans" style="font-size:13.5px;color:var(--maas-petroleo-45);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ ssNOS }} O.S. · {{ ssAbertura }} · {{ ssPlaca }} · {{ ssNome }}</span>
+            </sc-if>
+          </div>
+          <span onClick="{{ closeSS }}" role="button" tabindex="0" title="Fechar" style="margin-left:auto;flex:none;width:40px;height:40px;border-radius:10px;border:1px solid var(--border-default);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--surface-sunken);">{{ icSSClose }}</span>
+        </div>
+        <div style="overflow-y:auto;flex:1;min-height:0;padding:22px 30px;">
+          <sc-if value="{{ ssLoading }}"><div style="display:flex;align-items:center;justify-content:center;padding:70px 20px;font-size:16px;font-weight:600;color:var(--maas-petroleo-45);">Carregando extrato…</div></sc-if>
+          <sc-if value="{{ ssErro }}"><div style="display:flex;align-items:center;justify-content:center;padding:70px 20px;font-size:16px;font-weight:600;color:#B83A32;">Não foi possível carregar o extrato.</div></sc-if>
+          <sc-if value="{{ ssVazio }}"><div style="display:flex;align-items:center;justify-content:center;padding:70px 20px;font-size:16px;font-weight:600;color:var(--maas-petroleo-45);">S.S. não encontrada na base.</div></sc-if>
+          <sc-if value="{{ ssTemDados }}">
+          <div style="display:flex;flex-direction:column;gap:24px;">
+            <div>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--maas-petroleo-45);">Ordens de serviço ({{ ssNOS }})</span>
+              <div style="margin-top:10px;display:flex;flex-direction:column;">
+                <sc-for list="{{ ssOrdens }}" as="oo" hint-placeholder-count="2">
+                  <div onClick="{{ oo.abrirOS }}" role="button" tabindex="0" title="Ver extrato completo da O.S." style="display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid var(--border-subtle);cursor:pointer;" style-hover="background:var(--surface-sunken);">
+                    <span style="width:8px;height:8px;border-radius:50%;background:{{ oo.servCor }};flex:none;"></span>
+                    <span style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
+                      <span style="display:flex;align-items:baseline;gap:9px;">
+                        <span class="mono" style="font-size:14px;font-weight:700;color:var(--maas-petroleo);text-decoration:underline;text-decoration-color:var(--maas-petroleo-25);text-underline-offset:3px;">O.S. {{ oo.os }}</span>
+                        <span class="sans" style="font-size:12.5px;color:var(--maas-petroleo-45);">{{ oo.serv }}</span>
+                      </span>
+                      <sc-if value="{{ oo.temDesc }}"><span class="sans" style="font-size:12.5px;color:var(--maas-petroleo-60);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ oo.descricao }}</span></sc-if>
+                    </span>
+                    <span style="font-size:11.5px;font-weight:700;color:{{ oo.stFg }};background:{{ oo.stBg }};padding:3px 10px;border-radius:var(--radius-pill);flex:none;white-space:nowrap;">{{ oo.status }}</span>
+                    <span class="mono" style="font-size:13.5px;font-weight:700;color:var(--maas-petroleo);flex:none;width:112px;text-align:right;">{{ oo.valor }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--maas-petroleo-45);">Valores (total da S.S.)</span>
+              <div style="margin-top:10px;display:flex;flex-direction:column;">
+                <sc-for list="{{ ssValores }}" as="vv" hint-placeholder-count="4">
+                  <div style="display:flex;justify-content:space-between;padding:8px 2px;border-bottom:1px solid var(--border-subtle);">
+                    <span class="sans" style="font-size:13.5px;color:var(--maas-petroleo-60);">{{ vv.k }}</span>
+                    <span class="mono" style="font-size:14px;font-weight:600;color:var(--maas-petroleo);">{{ vv.val }}</span>
+                  </div>
+                </sc-for>
+                <div style="display:flex;justify-content:space-between;padding:12px 2px 2px;">
+                  <span class="sans" style="font-size:14px;font-weight:800;color:var(--maas-petroleo);">Total</span>
+                  <span class="mono" style="font-size:16px;font-weight:800;color:var(--maas-verde-escuro-2);">{{ ssTotal }}</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <span style="font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--maas-petroleo-45);">Mão de obra</span>
+              <sc-if value="{{ ssTemMdo }}">
+              <div style="margin-top:10px;display:flex;flex-direction:column;">
+                <sc-for list="{{ ssMdo }}" as="mm" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:12px;padding:9px 2px;border-bottom:1px solid var(--border-subtle);">
+                    <span class="sans" style="font-size:14px;font-weight:600;color:var(--maas-petroleo);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ mm.nome }}</span>
+                    <span class="sans" style="font-size:12.5px;color:var(--maas-petroleo-45);flex:none;">{{ mm.funcao }}</span>
+                    <span class="mono" style="font-size:13px;font-weight:700;color:var(--maas-petroleo);flex:none;width:72px;text-align:right;">{{ mm.horas }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              </sc-if>
+              <sc-if value="{{ ssSemMdo }}"><span class="sans" style="display:block;margin-top:8px;font-size:13.5px;color:var(--maas-petroleo-45);">Sem apontamento de mão de obra nesta S.S.</span></sc-if>
+            </div>
+          </div>
+          </sc-if>
         </div>
       </div>
     </div>
@@ -873,7 +958,9 @@ class Component extends DCLogic {
             // Popup de 2º nível: histórico de manutenção de um veículo (sob demanda).
             histOpen: false, histLoading: false, histErro: false, histData: null, histCod: '',
             // Popup de 2º nível: extrato de UMA O.S. (sob demanda).
-            extOpen: false, extLoading: false, extErro: false, extData: null, extOrdem: '' };
+            extOpen: false, extLoading: false, extErro: false, extData: null, extOrdem: '',
+            // Popup de 2º nível: extrato de UMA S.S. (sob demanda).
+            ssOpen: false, ssLoading: false, ssErro: false, ssData: null, ssNum: '' };
 
   // Abrir/fechar o detalhamento sempre por aqui, para os filtros não vazarem
   // de um KPI para o outro.
@@ -906,6 +993,20 @@ class Component extends DCLogic {
       .catch(() => this.setState({ extLoading: false, extErro: true }));
   }
   fecharExtratoOS() { this.setState({ extOpen: false }); }
+
+  // Extrato de UMA S.S. — busca SOB DEMANDA (/api/ss/<ss>/extrato). A S.S.
+  // agrupa uma ou mais O.S.; o popup soma valores e lista as O.S.
+  abrirExtratoSS(ss) {
+    if (!ss || ss === '—') return;
+    this.setState({ ssOpen: true, ssLoading: true, ssErro: false, ssData: null, ssNum: ss });
+    const tok = new URLSearchParams(location.search).get('token');
+    const qs = tok ? ('?token=' + encodeURIComponent(tok)) : '';
+    fetch('/api/ss/' + encodeURIComponent(ss) + '/extrato' + qs)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(d => this.setState({ ssLoading: false, ssData: d }))
+      .catch(() => this.setState({ ssLoading: false, ssErro: true }));
+  }
+  fecharExtratoSS() { this.setState({ ssOpen: false }); }
 
   componentDidMount() {
     this.tick();
@@ -1182,6 +1283,7 @@ class Component extends DCLogic {
       ...this.buildMecDetail(),
       ...this.buildHistorico(),
       ...this.buildExtratoOS(),
+      ...this.buildExtratoSS(),
       icClock:    this.ic('clock',28,'var(--maas-verde)'),
       icOS:       this.ic('clipboard',22,'var(--maas-verde)'),
       icClientes: this.ic('users',22,'var(--maas-verde)'),
@@ -1327,6 +1429,8 @@ class Component extends DCLogic {
                  abrirHist: () => this.abrirHistorico(r.codBem),
                  // Clique na ORDEM abre o extrato completo da O.S.
                  abrirExt: () => this.abrirExtratoOS(r.os),
+                 // Clique na S.S. abre o extrato completo da solicitação.
+                 abrirSS: () => this.abrirExtratoSS(r.ss),
                  // Abre o Google Maps em NOVA aba. Via window.open (e não só
                  // target="_blank") porque o runtime do painel intercepta o
                  // clique do <a> e abriria na mesma aba.
@@ -1551,6 +1655,66 @@ class Component extends DCLogic {
       extPecas: d.pecas || [],
       extTemPecas: !!d.temPecas,
       extSemPecas: existe && !d.temPecas,
+    };
+  }
+
+  // ---- Popup: extrato completo de UMA S.S. (2º nível, sob demanda) --------
+  // A S.S. agrupa uma ou mais O.S. Mostra veículo/abertura/valores totais e a
+  // lista de O.S. (cada uma reabre o extrato da O.S.) + mão de obra agregada.
+  buildExtratoSS() {
+    const s = this.state;
+    const stopE = (e) => { if (e && e.stopPropagation) e.stopPropagation(); };
+    const close = () => this.fecharExtratoSS();
+    const base = { closeSS: close, stopSS: stopE, icSSClose: this.ic('x', 22, 'var(--maas-petroleo)'),
+      icSSHead: this.ic('inbox', 26, 'var(--maas-verde)'), ssOrdens: [], ssMdo: [], ssValores: [] };
+    if (!s.ssOpen) return { ...base, ssOpen: false, ssLoading: false, ssErro: false,
+      ssTemDados: false, ssVazio: false, ssNum: '', ssPlaca: '', ssNome: '', ssAbertura: '',
+      ssServ: '', ssServCor: 'transparent', ssServResumo: '', ssStatus: '', ssStFg: '', ssStBg: '',
+      ssTotal: '', ssNOS: '', ssTemMdo: false, ssSemMdo: false };
+    const d = s.ssData || {};
+    const existe = !s.ssLoading && !s.ssErro && !!d.existe;
+    const v = d.valores || {};
+    const valores = existe ? [
+      { k: 'Mão de obra', val: v.maoObra },
+      { k: 'Material',    val: v.material },
+      { k: 'Terceiro',    val: v.terceiro },
+      { k: 'Ferramenta',  val: v.ferramenta },
+    ] : [];
+    const st = d.status || '';
+    const stFg = st === 'Cancelada' ? '#B83A32' : st === 'Aberta' ? 'var(--maas-laranja-escuro)' : 'var(--maas-verde-escuro-2)';
+    const stBg = st === 'Cancelada' ? 'rgba(217,83,79,.10)' : st === 'Aberta' ? 'rgba(214,143,74,.12)' : 'var(--maas-verde-16)';
+    // Cada O.S. da S.S. é clicável: reabre o extrato da O.S. por cima.
+    const ordens = (d.ordens || []).map(o => {
+      const ost = o.status || '';
+      return { ...o,
+        servCor: SERV_COR(o.serv),
+        stFg: ost === 'Cancelada' ? '#B83A32' : ost === 'Aberta' ? 'var(--maas-laranja-escuro)' : 'var(--maas-verde-escuro-2)',
+        stBg: ost === 'Cancelada' ? 'rgba(217,83,79,.10)' : ost === 'Aberta' ? 'rgba(214,143,74,.12)' : 'var(--maas-verde-16)',
+        temDesc: !!o.descricao,
+        abrirOS: () => this.abrirExtratoOS(o.os),
+      };
+    });
+    return { ...base,
+      ssOpen: true,
+      ssLoading: !!s.ssLoading,
+      ssErro: !!s.ssErro,
+      ssTemDados: existe,
+      ssVazio: !s.ssLoading && !s.ssErro && !d.existe,
+      ssNum: d.ss || s.ssNum || '',
+      ssPlaca: d.placa || '',
+      ssNome: d.nome || '',
+      ssAbertura: d.abertura || '',
+      ssServ: d.serv || '',
+      ssServCor: SERV_COR(d.serv),
+      ssServResumo: d.servResumo || '',
+      ssStatus: st, ssStFg: stFg, ssStBg: stBg,
+      ssTotal: v.total || '',
+      ssNOS: d.nOS || 0,
+      ssValores: valores,
+      ssOrdens: ordens,
+      ssMdo: d.maoDeObra || [],
+      ssTemMdo: !!d.temMdo,
+      ssSemMdo: existe && !d.temMdo,
     };
   }
 

@@ -1208,3 +1208,111 @@ def extrato_os_payload(data: dict, ordem: str) -> dict:
         "pecas":     pecas,
         "temPecas":  len(pecas) > 0,
     }
+
+
+# ======================= Extrato da S.S. (on-demand) =======================
+# Popup de 2º nível: a S.S. (solicitação) agrupa uma ou mais O.S. O extrato
+# soma os valores das O.S., lista cada O.S. (clicável → reabre o extrato da
+# O.S.) e traz a mão de obra agregada. Endpoint /api/ss/<ss>/extrato.
+def extrato_ss_payload(data: dict, ss: str) -> dict:
+    """Modela o extrato de uma S.S. `data` = fetch_extrato_ss
+    ({ordens, maoDeObra})."""
+    ordens_raw = (data or {}).get("ordens") or []
+    if not ordens_raw:
+        return {"ss": ss, "existe": False, "ordens": [], "maoDeObra": []}
+
+    def _f(row: dict, k: str) -> float:
+        try:
+            return float(row.get(k) or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    tot_mdo = tot_mat = tot_ter = tot_fer = 0.0
+    ordens = []
+    cod_bem = placa = nome = ""
+    servs: list[str] = []
+    algum_aberta = algum_concl = False
+    todas_canc = True
+    for r in ordens_raw:
+        cod_bem = cod_bem or _s(r.get("CODBEM"))
+        placa = placa or _s(r.get("placa"))
+        nome = nome or _s(r.get("nome"))
+        mdo_v = _f(r, "CUSTMDO")
+        mat_v = _f(r, "CUSTMAT") + _f(r, "CUSTMAA") + _f(r, "CUSTMAS")
+        ter_v = _f(r, "CUSTTER")
+        fer_v = _f(r, "CUSTFER")
+        tot_mdo += mdo_v; tot_mat += mat_v; tot_ter += ter_v; tot_fer += fer_v
+        os_total = mdo_v + mat_v + ter_v + fer_v
+        serv_nome = SERVICO_NOME.get(_s(r.get("SERVICO")), _s(r.get("SERVICO")) or "—")
+        if serv_nome != "—" and serv_nome not in servs:
+            servs.append(serv_nome)
+        st = _status_hist(r)
+        if st == "Aberta":
+            algum_aberta = True
+        elif st == "Concluída":
+            algum_concl = True
+        if _norm(r.get("SITUACA")) != "C":
+            todas_canc = False
+        ordens.append({
+            "os":        _s(r.get("ORDEM")) or "—",
+            "serv":      serv_nome,
+            "status":    st,
+            "descricao": _desc_txt(r.get("OBSERVA")),
+            "valor":     _moeda(os_total),
+        })
+
+    # Abertura da S.S. (igual em todas as O.S.): TQB DtAbertura + Hoaber (LOCAL).
+    abertura = "—"
+    for r in ordens_raw:
+        d = _dt_iso(r.get("dtAbertura"))
+        if d:
+            ho = _s(r.get("hoAbertura"))
+            abertura = d.strftime("%d/%m/%Y") + (" " + ho if ho else "")
+            break
+
+    if todas_canc:
+        status = "Cancelada"
+    elif algum_aberta:
+        status = "Aberta"
+    elif algum_concl:
+        status = "Concluída"
+    else:
+        status = "Aberta"
+
+    mao = []
+    for m in (data.get("maoDeObra") or []):
+        h = m.get("horas")
+        try:
+            htxt = f"{float(h):.2f}".replace(".", ",") + " h" if h else "—"
+        except (TypeError, ValueError):
+            htxt = "—"
+        mao.append({
+            "matricula": _s(m.get("matricula")),
+            "nome":  _s(m.get("nome")) or _s(m.get("matricula")) or "—",
+            "funcao": _s(m.get("funcao")),
+            "horas": htxt,
+        })
+
+    total = tot_mdo + tot_mat + tot_ter + tot_fer
+    return {
+        "ss":        _s(ss),
+        "existe":    True,
+        "codBem":    cod_bem,
+        "placa":     placa,
+        "nome":      nome,
+        "abertura":  abertura,
+        "status":    status,
+        "serv":      servs[0] if servs else "—",
+        "servResumo": ", ".join(servs) if servs else "—",
+        "nOS":       len(ordens),
+        "valores": {
+            "maoObra":    _moeda(tot_mdo),
+            "material":   _moeda(tot_mat),
+            "terceiro":   _moeda(tot_ter),
+            "ferramenta": _moeda(tot_fer),
+            "total":      _moeda(total),
+        },
+        "ordens":    ordens,
+        "maoDeObra": mao,
+        "temMdo":    len(mao) > 0,
+    }

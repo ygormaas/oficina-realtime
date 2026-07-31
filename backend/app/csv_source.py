@@ -86,3 +86,8 @@ def fetch_historico_veiculo(cod_bem: str) -> list[dict]:
 def fetch_extrato_os(ordem: str) -> dict:
     # Extrato da O.S. (STJ + STL_Custo) só no BigQuery; offline vazio.
     return {"cabecalho": None, "maoDeObra": [], "pecas": []}
+
+
+def fetch_extrato_ss(ss: str) -> dict:
+    # Extrato da S.S. (STJ + TQB + STL_Custo) só no BigQuery; offline vazio.
+    return {"ordens": [], "maoDeObra": []}

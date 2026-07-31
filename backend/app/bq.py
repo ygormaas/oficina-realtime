@@ -340,3 +340,51 @@ def fetch_extrato_os(ordem: str) -> dict:
     pec = [{k: _jsonable(v) for k, v in dict(r).items()} for r in cli.query(pecas_sql, job_config=_cfg()).result()]
     log.info("Extrato O.S. %s: cab=%d mdo=%d pecas=%d", ordem, len(cab), len(mdo), len(pec))
     return {"cabecalho": cab[0] if cab else None, "maoDeObra": mdo, "pecas": pec}
+
+
+def fetch_extrato_ss(ss: str) -> dict:
+    """Extrato de UMA S.S.: as O.S. da solicitação (STJ por SOLICI) + veículo
+    (ST9) + abertura/status (TQB) + mão de obra agregada (STL_Custo tipoReg='M').
+    A S.S. agrupa várias O.S. (ex.: 033179 → 038591 e 038592); o popup soma os
+    valores e lista as O.S. (cada uma reabre o extrato da O.S.). Consulta
+    PARAMETRIZADA. Ver extrato_ss_payload em kpis.py."""
+    from google.cloud import bigquery
+    def _cfg():
+        return bigquery.QueryJobConfig(
+            query_parameters=[bigquery.ScalarQueryParameter("s", "STRING", ss)])
+    # Uma linha por O.S. da S.S. A abertura da S.S. = entrada da S.S. (TQB
+    # DtAbertura+Hoaber, hora LOCAL — NÃO usar DataHoraAbertura nem converter
+    # fuso). ST9 traz placa/nome do veículo.
+    os_sql = f"""
+        SELECT stj.ORDEM, stj.SERVICO, stj.SITUACA, stj.TERMINO, stj.CODBEM, stj.OBSERVA,
+               stj.CUSTMDO, stj.CUSTMAT, stj.CUSTMAA, stj.CUSTMAS, stj.CUSTTER, stj.CUSTFER,
+               st9.placa AS placa, st9.nome AS nome,
+               tqb.DtAbertura AS dtAbertura, tqb.Hoaber AS hoAbertura, tqb.StatusOS AS statusOS
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.STJ` stj
+        LEFT JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.ST9_CadastroBem` st9
+          ON st9.bem = stj.CODBEM
+        LEFT JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.TQB_Monitoramento` tqb
+          ON tqb.ordemSTJ = stj.ORDEM
+        WHERE stj.SOLICI = @s
+        ORDER BY stj.ORDEM
+    """
+    # Mão de obra agregada da S.S.: STL_Custo (tipoReg='M') das O.S. desta S.S.
+    # (join na STJ por ordem para filtrar a solicitação), somando horas por
+    # matrícula. Mesma fonte/nome/função do extrato da O.S.
+    mdo_sql = f"""
+        SELECT stl.Matricula AS matricula, SUM(stl.quantId) AS horas,
+               ANY_VALUE(stl.unidade) AS unidade,
+               ANY_VALUE(sra.RA_NOMECMP) AS nome, ANY_VALUE(sra.RJ_DESC) AS funcao
+        FROM `{config.BQ_PROJECT}.{config.BQ_DATASET}.STL_Custo` stl
+        JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.STJ` stj
+          ON stj.ORDEM = stl.ordem AND stj.SOLICI = @s
+        LEFT JOIN `{config.BQ_PROJECT}.{config.BQ_DATASET}.SRA_SRJ_Funcionarios` sra
+          ON sra.RA_MAT = stl.Matricula
+        WHERE stl.tipoReg = 'M'
+        GROUP BY stl.Matricula
+    """
+    cli = _get_client()
+    ordens = [{k: _jsonable(v) for k, v in dict(r).items()} for r in cli.query(os_sql, job_config=_cfg()).result()]
+    mdo = [{k: _jsonable(v) for k, v in dict(r).items()} for r in cli.query(mdo_sql, job_config=_cfg()).result()]
+    log.info("Extrato S.S. %s: os=%d mdo=%d", ss, len(ordens), len(mdo))
+    return {"ordens": ordens, "maoDeObra": mdo}
