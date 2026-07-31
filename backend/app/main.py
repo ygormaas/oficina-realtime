@@ -233,7 +233,14 @@ async def healthz():
 async def index(request: Request):
     if not _token_ok(request.query_params.get("token", "")):
         return HTMLResponse(_PAGINA_NEGADA, status_code=401)
-    return FileResponse(config.FRONTEND_DIR / "Resumo_Oficina.dc.html")
+    # no-store: o painel roda em TV (kiosk) que fica dias com a mesma página
+    # aberta. Sem isto o navegador da TV serve o HTML EM CACHE e um novo deploy
+    # não aparece até limpar o cache. Assim, um simples reload já pega a versão
+    # nova. (support.js e afins, no mount de estáticos, seguem cacheáveis.)
+    return FileResponse(
+        config.FRONTEND_DIR / "Resumo_Oficina.dc.html",
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+    )
 
 
 # Arquivos estáticos do frontend (support.js, _ds, fallback de tokens…)
