@@ -56,8 +56,8 @@
     @media (prefers-reduced-motion: reduce){*{animation:none!important}}
   </style>
 </helmet>
-<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--surface-page);overflow:hidden;">
-  <div style="width:1920px;height:1080px;transform:scale({{ scale }});transform-origin:center center;background:var(--surface-page);display:flex;flex-direction:column;padding:36px 44px;box-sizing:border-box;gap:18px;">
+<div id="stagewrap" style="position:fixed;top:0;left:0;width:100vw;height:100vh;width:100dvw;height:100dvh;background:var(--surface-page);overflow:hidden;">
+  <div style="position:absolute;top:0;left:0;width:1920px;height:1080px;transform:scale({{ scale }});transform-origin:top left;background:var(--surface-page);display:flex;flex-direction:column;padding:36px 44px;box-sizing:border-box;gap:18px;">
 
     <!-- Header -->
     <header style="display:flex;align-items:center;gap:22px;flex:none;">
@@ -1143,6 +1143,8 @@ class Component extends DCLogic {
     try {
       this._ro = new ResizeObserver(this._r);
       this._ro.observe(document.documentElement);
+      const wrap = document.getElementById('stagewrap');
+      if (wrap) this._ro.observe(wrap);   // mede o retângulo real do palco
     } catch (e) { /* ResizeObserver ausente: os ticks acima cobrem */ }
     this.connectWS();
   }
@@ -1189,7 +1191,17 @@ class Component extends DCLogic {
   }
 
   fit() {
-    this.setState({ scale: FIT_SCALE() });
+    // Mede o TAMANHO REAL PINTADO do wrapper (que ocupa 100dvw×100dvh via CSS),
+    // NÃO o window.innerHeight — que em TV/embed às vezes mente. Escala o palco
+    // 1920×1080 para preencher exatamente esse retângulo: proporção dinâmica,
+    // enche qualquer tela sem borda, resolvido pelo próprio navegador.
+    const wrap = document.getElementById('stagewrap');
+    let w = 0, h = 0;
+    if (wrap) { const r = wrap.getBoundingClientRect(); w = r.width; h = r.height; }
+    if (!w || !h) { w = _VW(); h = _VH(); }   // fallback antes do wrapper existir
+    const sx = Math.round(w / 1920 * 10000) / 10000;
+    const sy = Math.round(h / 1080 * 10000) / 10000;
+    this.setState({ scale: sx + ',' + sy });
   }
   tick() {
     this.setState({ clock: new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' }) });
