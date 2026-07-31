@@ -322,6 +322,19 @@
         </div>
       </div>
     </div>
+
+    <!-- Rodapé de transparência (Bloco 5): faixa fina fixa no pé do palco com o
+         dataset e as tabelas-fonte do BigQuery + horário do último recálculo.
+         Fonte única no backend (payload.fontes); aqui só exibe. -->
+    <footer style="flex:none;display:flex;align-items:center;gap:14px;padding-top:12px;border-top:1px solid var(--border-subtle);min-width:0;">
+      <span style="display:inline-flex;flex:none;color:var(--maas-petroleo-45);">{{ icFonte }}</span>
+      <span style="font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--maas-petroleo-45);flex:none;">Fonte</span>
+      <span class="mono" style="font-size:12px;font-weight:700;color:var(--maas-petroleo-60);flex:none;">{{ fonteModo }}</span>
+      <span style="flex:none;color:var(--maas-petroleo-25);">·</span>
+      <span class="sans" style="font-size:12px;color:var(--maas-petroleo-45);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ fonteTabelas }}">{{ fonteTabelas }}</span>
+      <span style="flex:none;color:var(--maas-petroleo-25);">·</span>
+      <span class="sans" style="font-size:12px;color:var(--maas-petroleo-45);flex:none;white-space:nowrap;">Recalculado às <b class="mono" style="color:var(--maas-petroleo-60);font-weight:700;">{{ fonteAtualizado }}</b></span>
+    </footer>
   </div>
 
   <!-- Aguardando primeiro dado do servidor -->
@@ -1194,6 +1207,16 @@ class Component extends DCLogic {
     };
     const conn = CONN[this.state.conn] || CONN.connecting;
 
+    // --- rodapé de transparência (Bloco 5): fontes + último recálculo ---
+    const F = D.fontes || {};
+    const fonteModoMap = { bigquery: 'BigQuery · ' + (F.dataset || 'silver'),
+                           mock: 'demonstração', csv: 'CSV (offline)' };
+    const fonteModo = fonteModoMap[F.dataSource] || ('BigQuery · ' + (F.dataset || 'silver'));
+    const fonteTabelas = (F.tabelas || []).join('  ·  ');
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const fonteAtualizado = D.geradoEm ? (pad2(agora.getHours()) + ':' + pad2(agora.getMinutes())) : '—';
+    const icFonte = this.ic('layers', 15, 'var(--maas-petroleo-45)');
+
     const CLR = {
       neutral: { val:'var(--maas-petroleo)' },
       ok:      { val:'var(--maas-petroleo)' },
@@ -1353,6 +1376,7 @@ class Component extends DCLogic {
       headStatus: temCrit ? 'Atenção · priorizar' : 'Operação normal',
       headStatusColor: temCrit ? 'var(--maas-laranja-escuro)' : 'var(--maas-verde-escuro-2)',
       blocoOS, blocoClientes, tipoRows, tipoVeicRows, veicTiles, veicTotal, openVeic, icVeicDrill, agingRows, agingTotal, prevRows, cap, priorityRows,
+      icFonte, fonteModo, fonteTabelas, fonteAtualizado,
       activeAlerts, hasAlerts: activeAlerts.length > 0, noAlerts: activeAlerts.length === 0, alertCount: activeAlerts.length,
       ...this.buildDetail(),
       // Botão "Ver equipe" no card Capacidade × demanda (sempre visível) e o

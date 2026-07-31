@@ -98,6 +98,15 @@ def build_mock_payload() -> dict:
         "veiculos": {"mobilizados": j(56), "naoMobilizados": j(4, 1)},
         "localizacao": {"interna": j(55), "externa": j(14)},
         "tipoVeiculo": {"pesada": j(42), "leve": j(22)},
+        "fontes": {
+            "dataSource": "mock",
+            "dataset": "silver",
+            "tabelas": [
+                "STJ_Manutencao", "TQB_Monitoramento", "ST9_CadastroBem",
+                "STL_Custo", "SRA_SRJ_Funcionarios", "STF_Status_Manutencao",
+                "SZT_Contratos", "SA2_Fornecedor", "MAAS_SB1",
+            ],
+        },
         "detalhes": {
             "osForaPrazo": fora,
             "osAbertas": abertas_amostra,

@@ -1090,6 +1090,18 @@ def build_payload(man_rows: list[dict],
         "veiculos": {"mobilizados": len(veic_mob), "naoMobilizados": len(veic_nmob)},
         "localizacao": {"interna": len(loc_int), "externa": len(loc_ext)},
         "tipoVeiculo": tipo_veic,
+        # Rodapé de transparência (Bloco 5): de onde vêm os números. Fonte única
+        # aqui no backend — o frontend só exibe. As tabelas alimentam os KPIs/
+        # drill-downs deste painel (dataset `silver`).
+        "fontes": {
+            "dataSource": config.DATA_SOURCE,
+            "dataset": config.BQ_DATASET,
+            "tabelas": [
+                "STJ_Manutencao", "TQB_Monitoramento", "ST9_CadastroBem",
+                "STL_Custo", "SRA_SRJ_Funcionarios", "STF_Status_Manutencao",
+                "SZT_Contratos", "SA2_Fornecedor", "MAAS_SB1",
+            ],
+        },
     }
 
 
